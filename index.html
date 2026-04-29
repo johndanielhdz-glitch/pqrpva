@@ -288,6 +288,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
   <button class="nav-btn" onclick="showTab('workstreams',this)">Workstreams</button>
   <button class="nav-btn" onclick="showTab('schedule',this)">Schedule</button>
   <button class="nav-btn" onclick="showTab('nextsteps',this)">Next Steps</button>
+  <button class="nav-btn" onclick="showTab('risks',this)">Risks</button>
   <button class="nav-btn" onclick="showTab('about',this)">About</button>
 </div>
 
@@ -350,11 +351,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 <!-- SCHEDULE -->
 <div id="tab-schedule" class="tab-panel"><div class="content">
   <div class="chart-wrap">
-    <div class="chart-title">Issue Burn-Down — Actual vs. Target (Monthly)</div>
-    <canvas id="burndownChart" height="90"></canvas>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+      <div class="chart-title" style="margin-bottom:0;">Program Milestone Burndown — All Workstreams</div>
+      <div style="display:flex;gap:14px;align-items:center;flex-shrink:0;">
+        <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--gray);"><span style="width:9px;height:9px;border-radius:2px;background:#2563EB;display:inline-block;"></span>Phase 1 · 13 items</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--gray);"><span style="width:9px;height:9px;border-radius:2px;background:#7C3AED;display:inline-block;"></span>Phase 2 · 13 items</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--gray);"><span style="width:9px;height:9px;border-radius:2px;background:#D97706;display:inline-block;"></span>Phase 3 · 10 items</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--gray);"><span style="width:9px;height:9px;border-radius:2px;background:#059669;display:inline-block;"></span>Phase 4 · 7 items</span>
+      </div>
+    </div>
+    <canvas id="actionBurndownChart" height="105"></canvas>
   </div>
   <div class="section-title">Milestone Timeline — All Workstreams</div>
   <div id="milestone-timeline"></div>
+  <div class="section-title" style="margin-top:24px;">Historical Ticket Volume — Monitoring &amp; Alerting Workstream</div>
+  <div class="chart-wrap">
+    <div class="chart-title" style="font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0;">Monthly issue volume Aug 2025 – Apr 2026 · Actual vs. target trajectory</div>
+    <canvas id="burndownChart" height="90"></canvas>
+  </div>
 </div></div>
 
 <!-- NEXT STEPS -->
@@ -366,6 +380,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
     <button onclick="collapseAll()" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--gray);margin-left:6px;">Collapse All</button>
   </div>
   <div class="milestone-windows" id="milestone-windows"></div>
+</div></div>
+
+<!-- RISKS -->
+<div id="tab-risks" class="tab-panel"><div class="content">
+  <div id="risks-content"></div>
 </div></div>
 
 <!-- ABOUT -->
@@ -470,6 +489,8 @@ const TODAY_PCT = (15/TL_TOTAL*100).toFixed(2);
 function buildTimeline() {
   const container = document.getElementById('milestone-timeline');
   if (!container) return;
+  const tlDayToDate=d=>{const s=new Date('2026-04-13');s.setDate(s.getDate()+d);return s.toLocaleDateString('en-US',{month:'short',day:'numeric'});};
+  const wsOwners={'Program':'John Hernandez','M&A':'John Hernandez','Story/QA':'Megan Lane','OpModel':'Chris Jack','Recurring':'Dan Hernandez','Tableau':'John Hernandez'};
   const phaseBands = tlPhases.map(p =>
     `<div style="position:absolute;left:${p.s}%;width:${p.e-p.s}%;top:0;bottom:0;background:${p.c}0D;border-left:1px solid ${p.c}35;pointer-events:none;"></div>`
   ).join('');
@@ -499,7 +520,9 @@ function buildTimeline() {
         const safeTask = task.replace(/&/g,'&amp;').replace(/'/g,'&#39;');
         const statusLabel = done ? '✅ Completed' : '⏳ Upcoming';
         const dotStyle = done ? `background:${ws.dotC};border:2px solid ${ws.dotC};` : `background:white;border:2px solid ${ws.dotC};`;
-        dotsHtml += `<div style="position:absolute;left:${leftPct}%;top:${topPct}%;width:10px;height:10px;border-radius:50%;transform:translate(-50%,-50%);cursor:pointer;z-index:5;transition:transform .15s;${dotStyle}" data-task="${safeTask}" data-status="${statusLabel}" class="tl-dot-el" onmouseenter="showTlTip(event,this.dataset.task,this.dataset.status)" onmouseleave="hideTlTip()"></div>`;
+        const ownerName = wsOwners[ws.key] || '';
+        const dueDate = done ? '' : tlDayToDate(parseInt(day));
+        dotsHtml += `<div style="position:absolute;left:${leftPct}%;top:${topPct}%;width:10px;height:10px;border-radius:50%;transform:translate(-50%,-50%);cursor:pointer;z-index:5;transition:transform .15s;${dotStyle}" data-task="${safeTask}" data-status="${statusLabel}" data-owner="${ownerName}" data-date="${dueDate}" data-done="${done}" class="tl-dot-el" onmouseenter="showTlTip(event,this)" onmouseleave="hideTlTip()"></div>`;
       });
     });
     return `<div class="tl-row"><div class="tl-label"><div class="tl-label-name" style="color:${ws.dotC}">${ws.label}</div><div class="tl-label-count">${doneCount}/${total} done</div></div><div class="tl-track">${phaseBands}${todayLine}${dotsHtml}</div></div>`;
@@ -511,10 +534,19 @@ function buildTimeline() {
   });
 }
 
-function showTlTip(event, task, status) {
+function showTlTip(event, el) {
   const tip = document.getElementById('tl-tooltip');
   if (!tip) return;
-  tip.innerHTML = `<div style="font-weight:700;margin-bottom:3px;">${task}</div><div style="opacity:.7;font-size:10.5px;">${status}</div>`;
+  const task = el.dataset.task;
+  const status = el.dataset.status;
+  const owner = el.dataset.owner;
+  const date = el.dataset.date;
+  const done = el.dataset.done === 'true';
+  let html = `<div style="font-weight:700;margin-bottom:5px;line-height:1.3;">${task}</div>`;
+  html += `<div style="opacity:.75;font-size:10.5px;margin-bottom:4px;">${status}</div>`;
+  if (owner) html += `<div style="font-size:10.5px;margin-top:3px;opacity:.85;">👤 ${owner}</div>`;
+  if (!done && date) html += `<div style="font-size:10.5px;margin-top:3px;color:#FCD34D;font-weight:600;">📅 Due ${date}</div>`;
+  tip.innerHTML = html;
   tip.style.display = 'block';
   tip.style.left = (event.clientX + 14) + 'px';
   tip.style.top = (event.clientY - 10) + 'px';
@@ -566,9 +598,31 @@ function buildWindows(){
   });
 }
 
+const GITHUB_TOKEN='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';
+const GIST_ID='e609ba22136016f2eace4c7eaed7566c';
+const GIST_FILE='pqrp-state.json';
 const doneState={};
+async function loadState(){
+  try{
+    const r=await fetch(`https://api.github.com/gists/${GIST_ID}`,{headers:{'Authorization':`token ${GITHUB_TOKEN}`,'Accept':'application/vnd.github.v3+json'}});
+    if(!r.ok)return;
+    const d=await r.json();
+    const c=d.files[GIST_FILE]?.content;
+    if(c)Object.assign(doneState,JSON.parse(c));
+  }catch(e){console.warn('Gist load failed',e);}
+}
+let _saveTimer;
+function saveDoneState(){
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(async()=>{
+    try{
+      await fetch(`https://api.github.com/gists/${GIST_ID}`,{method:'PATCH',headers:{'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},body:JSON.stringify({files:{[GIST_FILE]:{content:JSON.stringify(doneState)}}})});
+    }catch(e){console.warn('Gist save failed',e);}
+  },600);
+}
 function toggleItem(wi,ii){
   const key=`${wi}-${ii}`;doneState[key]=!doneState[key];
+  saveDoneState();
   const el=document.getElementById(`mi-${wi}-${ii}`);if(!el)return;
   el.querySelector('.mi-check').classList.toggle('done',doneState[key]);
   el.querySelector('.mi-task').classList.toggle('done-text',doneState[key]);
@@ -623,6 +677,45 @@ workstreams.forEach((ws,idx)=>{
   wsCards.innerHTML+=`<div class="ws-card" id="wsc-${idx}"><div class="ws-header" onclick="toggleWS(${idx})"><div class="ws-left"><div class="ws-icon" style="background:${ws.color}">${ws.icon}</div><div><div class="ws-title">${ws.name}${ws.hasBriefing?' <span style="font-size:9.5px;background:var(--green-light);color:var(--green);padding:1px 6px;border-radius:10px;font-weight:600;margin-left:6px;">Phase 1 Data Live</span>':''}</div><div class="ws-owner">Owner: ${ws.owner}</div></div></div><div class="ws-right"><span class="ws-target-badge">${ws.target}</span><span class="phase-status status-active" style="font-size:10px">● Active</span><span class="ws-chevron">▼</span></div></div><div class="ws-body">${bodyContent}</div></div>`;
 });
 
+// ── Program Milestone Burndown Chart ──────────────────────────────────────
+const totalMil=tlMilestones.length;
+const p1Mil=tlMilestones.filter(m=>m[1]<=21);
+const p2Mil=tlMilestones.filter(m=>m[1]>21&&m[1]<=42);
+const p3Mil=tlMilestones.filter(m=>m[1]>42&&m[1]<=85);
+const p4Mil=tlMilestones.filter(m=>m[1]>85);
+const p1Count=p1Mil.length,p2Count=p2Mil.length,p3Count=p3Mil.length,p4Count=p4Mil.length;
+const p1Done=p1Mil.filter(m=>m[3]).length,p2Done=p2Mil.filter(m=>m[3]).length,p3Done=p3Mil.filter(m=>m[3]).length;
+const idealRem=[totalMil,totalMil-p1Count,totalMil-p1Count-p2Count,totalMil-p1Count-p2Count-p3Count,0];
+const actualRem=[totalMil,totalMil-(p1Done+p2Done+p3Done),null,null,null];
+const ctx3=document.getElementById('actionBurndownChart').getContext('2d');
+new Chart(ctx3,{
+  data:{
+    labels:[['Program Start','Apr 13'],['Phase 1 End','May 4'],['Phase 2 End','May 25'],['Phase 3 End','Jul 7'],['Program End','Sep 30']],
+    datasets:[
+      {type:'bar',label:'Items Due This Phase',data:[null,p1Count,p2Count,p3Count,p4Count],backgroundColor:['rgba(0,0,0,0)','rgba(37,99,235,.72)','rgba(124,58,237,.72)','rgba(217,119,6,.72)','rgba(5,150,105,.72)'],borderColor:['transparent','#2563EB','#7C3AED','#D97706','#059669'],borderWidth:1.5,borderRadius:4,yAxisID:'y2',order:3},
+      {type:'line',label:'Ideal Burndown',data:idealRem,borderColor:'#006A4D',backgroundColor:'rgba(0,106,77,.06)',borderWidth:2,borderDash:[5,4],fill:true,tension:.2,pointBackgroundColor:'#006A4D',pointRadius:4,pointHoverRadius:6,yAxisID:'y',order:1},
+      {type:'line',label:'Actual Progress',data:actualRem,borderColor:'#1C2B3A',backgroundColor:'rgba(28,43,58,.07)',borderWidth:2.5,fill:false,tension:.15,pointBackgroundColor:'#1C2B3A',pointRadius:5,pointHoverRadius:7,yAxisID:'y',order:2}
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{
+      legend:{position:'bottom',labels:{font:{family:'Arial',size:11},boxWidth:12}},
+      tooltip:{
+        callbacks:{
+          title:(items)=>{const lbls=['Program Start (Apr 13)','Phase 1 End (May 4)','Phase 2 End (May 25)','Phase 3 End (Jul 7)','Program End (Sep 30)'];return lbls[items[0].dataIndex];},
+          afterBody:(items)=>{const i=items[0].dataIndex;const msgs=[`${totalMil} total milestones across 6 workstreams`,`Target: ${p1Count} items · Completed: ${p1Done} · Remaining: ${p1Count-p1Done} · In progress`,`Target: ${p2Count} items · Phase upcoming`,`Target: ${p3Count} items · Phase upcoming`,`Target: ${p4Count} items · Phase upcoming`];return[msgs[i]];}
+        }
+      }
+    },
+    scales:{
+      y:{beginAtZero:true,max:Math.ceil(totalMil*1.1),title:{display:true,text:'Remaining Milestones',font:{size:11}},grid:{color:'#F0F0F0'},ticks:{font:{size:11}}},
+      y2:{position:'right',beginAtZero:true,max:Math.ceil(Math.max(p1Count,p2Count,p3Count,p4Count)*1.4),title:{display:true,text:'Items This Phase',font:{size:11}},grid:{drawOnChartArea:false},ticks:{font:{size:11}}},
+      x:{grid:{color:'#F0F0F0'},ticks:{font:{size:11}}}
+    }
+  }
+});
+
 const ctx=document.getElementById('burndownChart').getContext('2d');
 new Chart(ctx,{type:'line',data:{labels:["Aug '25","Sep '25","Oct '25","Nov '25","Dec '25","Jan '26","Feb '26","Mar '26","Apr '26"],datasets:[{label:'Actual Tickets/Month',data:[496,423,959,342,427,528,357,279,80],borderColor:'#1C2B3A',backgroundColor:'rgba(28,43,58,.06)',borderWidth:2,fill:true,tension:.3,pointBackgroundColor:'#1C2B3A',pointRadius:4},{label:'Target Trajectory',data:[476,430,380,300,220,160,110,75,50],borderColor:'#006A4D',backgroundColor:'rgba(0,106,77,.05)',borderWidth:2,borderDash:[5,4],fill:false,tension:.4,pointRadius:3,pointBackgroundColor:'#006A4D'},{label:'Goal (≤50)',data:[50,50,50,50,50,50,50,50,50],borderColor:'#DC2626',borderWidth:1.5,borderDash:[6,4],fill:false,pointRadius:0}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'Arial',size:11}}},tooltip:{mode:'index',intersect:false}},scales:{y:{beginAtZero:true,title:{display:true,text:'Tickets / Month',font:{size:11}},grid:{color:'#F0F0F0'}},x:{grid:{color:'#F0F0F0'}}}}});
 
@@ -634,7 +727,6 @@ function showTab(tab,btn){
   requestAnimationFrame(()=>requestAnimationFrame(()=>panel.classList.add('visible')));
   if(btn)btn.classList.add('active');
 }
-requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelector('.tab-panel.active').classList.add('visible')));
 
 function toggleWS(idx){document.getElementById('wsc-'+idx).classList.toggle('open');}
 function showBTab(tab,btn){
@@ -644,7 +736,55 @@ function showBTab(tab,btn){
   if(btn)btn.classList.add('active');
 }
 
-buildWindows();
-buildTimeline();
+function buildRisks(){
+  const TODAY_DAY=Math.round(parseFloat(TODAY_PCT)/100*TL_TOTAL);
+  const overdue=tlMilestones.filter(m=>m[1]>0&&m[1]<=TODAY_DAY&&!m[3]);
+  const upcoming=tlMilestones.filter(m=>m[1]>TODAY_DAY&&m[1]<=TODAY_DAY+21&&!m[3]);
+  const dayToDate=d=>{const s=new Date('2026-04-13');s.setDate(s.getDate()+d);return s.toLocaleDateString('en-US',{month:'short',day:'numeric'});};
+  const wsCol={'Program':'#334155','M&A':'#1D4ED8','Story/QA':'#059669','OpModel':'#B45309','Recurring':'#B91C1C','Tableau':'#6D28D9'};
+  const wsLbl={'Program':'Program','M&A':'Monitoring & Alerting','Story/QA':'Story / QA','OpModel':'Operating Model','Recurring':'Recurring Issues','Tableau':'Tableau Perf.'};
+  const staticRisks=[
+    {cat:'Schedule',title:'Phase 1 Baseline Lock',desc:'5 remaining Phase 1 milestones must close by May 4. Recurring Issues workstream is furthest behind with 2 items already overdue.',owner:'John Hernandez',impact:'High',likelihood:'Medium',mitigation:'Daily check-ins this week; no new scope until baseline locked.',color:'#DC2626'},
+    {cat:'External Dependency',title:'IFM Hub Fix',desc:'Root-cause fix for a major recurring failure depends on IFM team response. No confirmed timeline yet — this is one of the oldest open root causes.',owner:'Dan Hernandez',impact:'High',likelihood:'Medium',mitigation:'Escalate to leadership by May 3 if no response. Add to standing MS review.',color:'#D97706'},
+    {cat:'External Dependency',title:'JIRA BASS-16457 — Schema Mismatch',desc:'Column constraint violations causing 23 repeat tickets/month. Fix requires Olympic team action and has been open for multiple sprints.',owner:'Dev Team Lead',impact:'High',likelihood:'Low',mitigation:'Escalate with formal SLA in Phase 2 Week 3. Track in burn-down dashboard.',color:'#D97706'},
+    {cat:'External Dependency',title:'JIRA BASS-16564 — Tririga API',desc:'Persistent API/data issue causing 20 repeat tickets/month. Assigned JIRA open with no resolution date.',owner:'Dev Team Lead',impact:'High',likelihood:'Low',mitigation:'Escalate with SLA in Phase 2 Week 3. Consider interim suppression if non-client-impacting.',color:'#D97706'},
+    {cat:'Infrastructure',title:'Postgres RDS Space Exhaustion',desc:'Largest single driver of client-impacting tickets (~130/mo). Auto-scaling fix not scheduled until Phase 3 — risk window is 10+ weeks.',owner:'DBA + Infra',impact:'Critical',likelihood:'Medium',mitigation:'Pre-schedule Infra sprint slot during Phase 2. Add manual 80% space alert as interim measure.',color:'#7C3AED'},
+    {cat:'Adoption',title:'QA Gate Compliance',desc:'New story standards require behavior change from Olympic delivery team. Risk of selective or inconsistent adoption without enforcement mechanism.',owner:'Megan Lane',impact:'Medium',likelihood:'Medium',mitigation:'Enforce at story review stage. Track compliance % weekly in program sync.',color:'#2563EB'},
+    {cat:'Resource',title:'Key Person Concentration',desc:'John Hernandez is primary owner on 3 of 5 workstreams. Any unavailability creates a single point of failure across Monitoring, Tableau, and Program management.',owner:'Program',impact:'High',likelihood:'Low',mitigation:'Document workstream runbooks by end of Phase 1. Identify backup owners for each stream.',color:'#059669'},
+    {cat:'Schedule',title:'Tableau APAC Dependency',desc:'288 critical workbook remediations require APAC team mobilization in Phase 3. Cross-timezone coordination and resourcing not yet confirmed.',owner:'John Hernandez',impact:'High',likelihood:'Medium',mitigation:'Initiate APAC conversation in Phase 2. Confirm capacity and remediation tooling.',color:'#DC2626'},
+  ];
+  const iC={Critical:'#FEE2E2',High:'#FEF3C7',Medium:'#EDE9FE',Low:'#D1FAE5'};
+  const iT={Critical:'#991B1B',High:'#92400E',Medium:'#5B21B6',Low:'#065F46'};
+  const lC={High:'#FEE2E2',Medium:'#FEF3C7',Low:'#D1FAE5'};
+  const lT={High:'#991B1B',Medium:'#92400E',Low:'#065F46'};
+  const overdueHtml=overdue.length===0
+    ?`<div style="padding:14px 16px;background:var(--green-light);border-radius:8px;font-size:12px;color:var(--green);font-weight:600;">✓ No overdue milestones — program is on track through today.</div>`
+    :overdue.map(m=>`<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:oklch(99% 0.004 27);border:1px solid oklch(88% 0.06 27);border-radius:8px;"><div style="width:8px;height:8px;border-radius:50%;background:#DC2626;flex-shrink:0;margin-top:4px;"></div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--navy);">${m[2]}</div><div style="display:flex;gap:7px;margin-top:5px;flex-wrap:wrap;"><span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:#FEE2E2;color:#991B1B;">Overdue · Day ${m[1]} (${dayToDate(m[1])})</span><span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:10px;background:${wsCol[m[0]]}22;color:${wsCol[m[0]]};">${wsLbl[m[0]]||m[0]}</span></div></div></div>`).join('');
+  const upcomingHtml=upcoming.length===0
+    ?`<div style="padding:14px 16px;background:var(--green-light);border-radius:8px;font-size:12px;color:var(--green);font-weight:600;">✓ No critical-path milestones in the next 21 days.</div>`
+    :upcoming.map(m=>`<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 14px;background:white;border:1px solid var(--border);border-radius:8px;"><div style="width:8px;height:8px;border-radius:50%;background:#D97706;flex-shrink:0;margin-top:4px;"></div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--navy);">${m[2]}</div><div style="display:flex;gap:7px;margin-top:5px;flex-wrap:wrap;"><span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:#FEF3C7;color:#92400E;">Due ${dayToDate(m[1])} · Day ${m[1]}</span><span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:10px;background:${wsCol[m[0]]}22;color:${wsCol[m[0]]};">${wsLbl[m[0]]||m[0]}</span></div></div></div>`).join('');
+  const riskHtml=staticRisks.map(r=>`<div style="background:white;border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid ${r.color};"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;"><div><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:3px;">${r.cat}</div><div style="font-size:13px;font-weight:700;color:var(--navy);">${r.title}</div></div><div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;"><span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:${iC[r.impact]};color:${iT[r.impact]};">${r.impact}</span><span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:${lC[r.likelihood]};color:${lT[r.likelihood]};">${r.likelihood} likelihood</span></div></div><div style="font-size:11.5px;color:var(--gray);line-height:1.55;margin-bottom:8px;">${r.desc}</div><div style="display:flex;align-items:flex-start;gap:7px;padding:7px 10px;background:var(--gray-light);border-radius:6px;"><span style="font-size:10px;font-weight:700;color:var(--green);flex-shrink:0;white-space:nowrap;">↳ Mitigation:</span><span style="font-size:10.5px;color:var(--gray);line-height:1.4;">${r.mitigation}</span></div><div style="font-size:10px;color:var(--muted);margin-top:7px;">Owner: ${r.owner}</div></div>`).join('');
+  document.getElementById('risks-content').innerHTML=`<div class="metric-band" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px;"><div class="metric" style="--metric-accent:#DC2626"><div class="metric-label">Overdue Milestones</div><div class="metric-val">${overdue.length}</div><div class="metric-sub">Past due, not yet completed</div></div><div class="metric" style="--metric-accent:#D97706"><div class="metric-label">Due Next 21 Days</div><div class="metric-val">${upcoming.length}</div><div class="metric-sub">Critical path items ahead</div></div><div class="metric" style="--metric-accent:#7C3AED"><div class="metric-label">Open Risk Items</div><div class="metric-val">${staticRisks.length}</div><div class="metric-sub">Tracked in risk register</div></div></div>${overdue.length>0?`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FEE2E2;border-radius:8px;margin-bottom:20px;"><span style="font-size:14px;">⚠️</span><span style="font-size:12px;font-weight:600;color:#991B1B;">${overdue.length} milestone${overdue.length>1?' are':' is'} overdue — these are past their scheduled due date and are now on the critical path.</span></div>`:''}<div class="section-title">Overdue Milestones</div><div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">${overdueHtml}</div><div class="section-title">Critical Path — Next 21 Days</div><div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">${upcomingHtml}</div><div class="section-title">Program Risk Register</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">${riskHtml}</div>`;
+}
+
+function applySavedState(){
+  Object.entries(doneState).forEach(([key,isDone])=>{
+    if(!isDone)return;
+    const el=document.getElementById(`mi-${key}`);
+    if(!el)return;
+    el.querySelector('.mi-check').classList.add('done');
+    el.querySelector('.mi-task').classList.add('done-text');
+  });
+  windows.forEach((_,wi)=>updateWindowProgress(wi));
+}
+async function init(){
+  await loadState();
+  buildWindows();
+  applySavedState();
+  buildTimeline();
+  buildRisks();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelector('.tab-panel.active').classList.add('visible')));
+}
+init();
 </script>
 </body></html>
