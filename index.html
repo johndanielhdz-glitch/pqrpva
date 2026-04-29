@@ -335,8 +335,24 @@ const workstreams=[
    deliverables:['QA checklist per job type','Updated delivery template','QA sign-off expectations','Lightweight QA artifacts'],
    tasks:[{phase:'P1',text:'Define standard QA gates',pri:'High'},{phase:'P1',text:'Implement new Story standards w/ Alan',pri:'High'},{phase:'P2',text:'Update delivery story template',pri:'High'},{phase:'P2',text:'Introduce lightweight QA artifacts',pri:'Med'},{phase:'P2',text:'Publish QA checklist per job type',pri:'High'},{phase:'P3',text:'Deliver updated hand-off template',pri:'Med'},{phase:'P3',text:'Align with enhanced Story process',pri:'Med'}]},
   {icon:'🔄',color:'#FEF3C7',name:'Operating Model Alignment',owner:'Chris Jack',target:'Planned work not sabotaged by reactive fire drills',hasBriefing:false,
-   deliverables:['RACI for MS / Core / Olympic','Sprint capacity rule (10–15%)','Weekly Core–Reactive sync','SLAs for acknowledgment vs. resolution'],
-   tasks:[{phase:'P1',text:'Meet with Core team on sprint planning',pri:'High'},{phase:'P1',text:'Define escalation boundaries',pri:'High'},{phase:'P2',text:'Reserve sprint capacity (10–15%)',pri:'High'},{phase:'P2',text:"Little's Law throughput analysis",pri:'Med'},{phase:'P2',text:'Publish RACI for MS / Core / Olympic',pri:'High'},{phase:'P2',text:'Establish SLAs',pri:'High'},{phase:'P3',text:'Launch weekly Core–Reactive sync',pri:'Med'}]},
+   deliverables:[{text:'RACI for MS / Core / Olympic',done:true},'Sprint capacity rule (10–15%)','Weekly Core–Reactive sync','SLAs for acknowledgment vs. resolution'],
+   raci:{title:'Ticket Failure Process RACI',roles:['Mesos Agent','Managed Services','Alan Kehoe','Junior Olympic Team','Senior Olympic Team','Core Team','DBA Team'],rows:[
+     {step:'Detect job failure',cells:['R','R/A','I','I','I','I',null]},
+     {step:'Attempt automatic restart',cells:['R','R/A','I','I','I','I',null]},
+     {step:'Triage & categorize failure',cells:[null,'R/A',null,null,null,null,null]},
+     {step:'Notify teams (DL email)',cells:[null,'R/A','I','I','I','I',null]},
+     {step:'Create ServiceNow / P4 BAS ticket',cells:[null,'R/A','I','C','I','I',null]},
+     {step:'Assign P4 BAS Ticket',cells:[null,null,'R/A',null,null,null,null]},
+     {step:'Assess client impact',cells:[null,null,'R/A',null,null,'C',null]},
+     {step:'Execute playbook troubleshooting',cells:[null,'R','A','R',null,null,null]},
+     {step:'Determine playbook exhaustion',cells:[null,'R','A','R',null,null,null]},
+     {step:'Escalate beyond standard handling',cells:[null,null,'A',null,'R',null,null]},
+     {step:'Engage Core Team for expertise',cells:[null,null,'A',null,'R','C',null]},
+     {step:'Coordinate resolution actions',cells:[null,null,'A',null,'R','C',null]},
+     {step:'Engage DBA via chat channel',cells:[null,null,'A',null,'R/A','I','R']},
+     {step:'Close incident / ticket',cells:[null,null,'A','R','R','R',null]},
+   ]},
+   tasks:[{phase:'P1',text:'Meet with Core team on sprint planning',pri:'High'},{phase:'P1',text:'Define escalation boundaries',pri:'High'},{phase:'P2',text:'Reserve sprint capacity (10–15%)',pri:'High'},{phase:'P2',text:"Little's Law throughput analysis",pri:'Med'},{phase:'P2',text:'Publish RACI for MS / Core / Olympic',pri:'High',done:true},{phase:'P2',text:'Establish SLAs',pri:'High'},{phase:'P3',text:'Launch weekly Core–Reactive sync',pri:'Med'}]},
   {icon:'🔧',color:'#FEE2E2',name:'Recurring Issue Elimination',owner:'Dan Hernandez',target:'90% reduction in highest-volume recurring failures',hasBriefing:false,
    deliverables:['Root-cause analysis','Permanent-fix stories','Reduction plan','Prevention standards'],
    tasks:[{phase:'P1',text:'Coordinate needs from IFM hub',pri:'High'},{phase:'P1',text:'Separate recurring vs. one-off incidents',pri:'High'},{phase:'P2',text:'Root-cause analysis on top drivers',pri:'High'},{phase:'P2',text:'Convert recurring incidents to permanent-fix backlog',pri:'High'},{phase:'P3',text:'Implement structural fixes',pri:'High'},{phase:'P3',text:'Deliver reduction plan',pri:'Med'},{phase:'P4',text:'Develop prevention standards',pri:'Med'}]},
@@ -581,8 +597,31 @@ workstreams.forEach((ws,idx)=>{
   if(ws.hasBriefing){bodyContent=`<div style="margin-top:12px">${buildMAbriefing()}</div>`;}
   else{
     const th=ws.tasks.map(t=>`<div class="task-item"><span class="task-phase-tag ${phaseTagClass[t.phase]}">${t.phase}</span><span class="task-text">${t.text}</span><span class="task-priority ${t.pri==='High'?'pri-high':'pri-med'}">${t.pri}</span></div>`).join('');
-    const dh=ws.deliverables.map(d=>`<div class="del-item">${d}</div>`).join('');
-    bodyContent=`<div class="ws-tasks">${th}</div><div class="deliverables"><div class="del-title">📦 Key Deliverables</div>${dh}</div>`;
+    const dh=ws.deliverables.map(d=>{
+      const text=typeof d==='object'?d.text:d;
+      const done=typeof d==='object'&&d.done;
+      return `<div class="del-item${done?' del-done':''}">${done?'<span style="color:var(--green);font-weight:700;">✅</span> ':''}${text}</div>`;
+    }).join('');
+    let raciHtml='';
+    if(ws.raci){
+      const r=ws.raci;
+      const cellColor={R:'#DBEAFE',A:'#FEF3C7','R/A':'#D1FAE5','R/A':'#D1FAE5',C:'#F3E8FF',I:'#F9FAFB'};
+      const cellText={R:'<b>R</b>',A:'<b>A</b>','R/A':'<b>R/A</b>',C:'<b>C</b>',I:'I'};
+      const hdr=r.roles.map(role=>`<th style="font-size:10px;padding:6px 8px;background:#1E3A5F;color:white;font-weight:600;text-align:center;white-space:nowrap;">${role}</th>`).join('');
+      const rows=r.rows.map(row=>{
+        const cells=row.cells.map(c=>c?`<td style="text-align:center;padding:5px 8px;background:${cellColor[c]||'#fff'};font-size:11px;">${cellText[c]||c}</td>`:`<td style="background:#fff;"></td>`).join('');
+        return `<tr><td style="padding:6px 10px;font-size:11px;font-weight:500;white-space:nowrap;border-right:2px solid #E5E7EB;">${row.step}</td>${cells}</tr>`;
+      }).join('');
+      raciHtml=`<div style="margin-top:14px;"><div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;">📋 ${r.title}</div>
+        <div style="overflow-x:auto;border-radius:8px;border:1px solid #E5E7EB;"><table style="border-collapse:collapse;width:100%;min-width:600px;">
+          <thead><tr><th style="padding:6px 10px;background:#1E3A5F;color:white;font-size:10px;font-weight:600;text-align:left;min-width:200px;">Process Step</th>${hdr}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>
+        <div style="margin-top:6px;font-size:10px;color:var(--gray);display:flex;gap:12px;flex-wrap:wrap;">
+          <span><b style="color:#1D4ED8;">R</b> = Responsible</span><span><b style="color:#B45309;">A</b> = Accountable</span><span><b style="color:#7C3AED;">C</b> = Consulted</span><span>I = Informed</span>
+        </div></div>`;
+    }
+    bodyContent=`<div class="ws-tasks">${th}</div><div class="deliverables"><div class="del-title">📦 Key Deliverables</div>${dh}</div>${raciHtml}`;
   }
   wsCards.innerHTML+=`<div class="ws-card" id="wsc-${idx}"><div class="ws-header" onclick="toggleWS(${idx})"><div class="ws-left"><div class="ws-icon" style="background:${ws.color}">${ws.icon}</div><div><div class="ws-title">${ws.name}${ws.hasBriefing?' <span style="font-size:9.5px;background:var(--green-light);color:var(--green);padding:1px 6px;border-radius:10px;font-weight:600;margin-left:6px;">Phase 1 Data Live</span>':''}</div><div class="ws-owner">Owner: ${ws.owner}</div></div></div><div class="ws-right"><span class="ws-target-badge">${ws.target}</span><span class="phase-status status-active" style="font-size:10px">● Active</span><span class="ws-chevron">▼</span></div></div><div class="ws-body">${bodyContent}</div></div>`;
 });
