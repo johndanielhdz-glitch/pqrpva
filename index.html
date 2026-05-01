@@ -113,6 +113,33 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 .del-title{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:5px;}
 .del-item{font-size:11px;color:var(--gray);padding:2px 0 2px 14px;position:relative;}
 .del-item::before{content:'✓';position:absolute;left:0;color:var(--green);font-size:10px;font-weight:700;}
+.del-done{opacity:.7;text-decoration:line-through;}
+.wst-check{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;cursor:pointer;transition:all .15s;margin-top:2px;}
+.wst-check.done{background:var(--green);border-color:var(--green);position:relative;}
+.wst-check.done::after{content:'✓';color:white;font-size:9px;font-weight:800;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
+.note-btn{font-size:12px;cursor:pointer;opacity:.5;transition:opacity .15s;user-select:none;flex-shrink:0;}
+.note-btn:hover,.note-btn.has-note{opacity:1;}
+.note-area{margin-top:5px;}
+.note-area textarea{width:100%;font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;resize:none;height:52px;font-family:inherit;background:var(--gray-light);color:var(--navy);outline:none;box-sizing:border-box;}
+.note-area textarea:focus{border-color:var(--blue);background:white;}
+.ws-prog-panel{background:white;border-radius:10px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:16px;}
+.ws-prog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:10px;}
+.ws-prog-item{background:var(--gray-light);border-radius:8px;padding:10px 12px;}
+.ws-prog-name{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ws-prog-bar{height:6px;background:#E5E7EB;border-radius:3px;overflow:hidden;margin-bottom:4px;}
+.ws-prog-fill{height:100%;background:var(--green);border-radius:3px;transition:width .3s;}
+.ws-prog-meta{font-size:10px;color:var(--gray);}
+.activity-panel{background:white;border-radius:10px;box-shadow:var(--shadow);padding:14px 16px;margin-top:16px;}
+.act-item{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);}
+.act-item:last-child{border-bottom:none;}
+.act-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0;}
+.act-dot.done{background:var(--green);}
+.act-dot.undone{background:#9CA3AF;}
+.act-body{flex:1;}
+.act-label{font-size:12px;font-weight:600;color:var(--navy);}
+.act-meta{font-size:10.5px;color:var(--gray);margin-top:1px;}
+.act-note{font-size:11px;color:#6B7280;margin-top:3px;background:var(--gray-light);padding:3px 7px;border-radius:4px;font-style:italic;}
+.act-empty{font-size:12px;color:var(--gray);text-align:center;padding:16px 0;}
 .briefing-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border-radius:10px;overflow:hidden;margin:14px 0 16px;box-shadow:var(--shadow);}
 .bkpi{padding:12px 12px 10px;text-align:center;background:white;}
 .bkpi-val{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;line-height:1;}
@@ -274,7 +301,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 
 <div id="tab-workstreams" class="tab-panel"><div class="content">
   <div class="section-title">Workstream Details</div>
+  <div class="ws-prog-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:12px;font-weight:700;color:var(--navy);">📊 Overall Task Progress</div>
+      <span id="save-status" style="font-size:10px;color:var(--gray);font-style:italic;"></span>
+    </div>
+    <div class="ws-prog-grid" id="ws-prog-grid"></div>
+  </div>
   <div class="workstreams" id="ws-cards"></div>
+  <div class="activity-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div style="font-size:12px;font-weight:700;color:var(--navy);">🕐 Recent Activity</div>
+      <span style="font-size:10px;color:var(--gray);">Last 15 check-ins — synced via Gist</span>
+    </div>
+    <div id="activity-feed-list"><div class="act-empty">No activity yet — start checking off tasks!</div></div>
+  </div>
 </div></div>
 
 <div id="tab-schedule" class="tab-panel"><div class="content">
@@ -329,11 +370,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 <script>
 const workstreams=[
   {icon:'📊',color:'#DBEAFE',name:'Monitoring & Alerting',owner:'John Hernandez',target:'≤50 issues/month in 90 days',hasBriefing:true,
-   deliverables:['Issue taxonomy','Top 15 root cause list','Burn-down tracker','Escalation flow','Kill list'],
+   deliverables:['Issue taxonomy',{text:'Top 15 root cause list',done:true},'Burn-down tracker','Escalation flow','Kill list'],
    tasks:[{phase:'P1',text:'Categorize 300 issues/month',pri:'High',done:true},{phase:'P1',text:'Identify Top 15 failure patterns',pri:'High',done:true},{phase:'P1',text:'Publish issue taxonomy',pri:'High'},{phase:'P1',text:'Create burn-down tracker',pri:'High'},{phase:'P2',text:'Escalation flow diagram',pri:'Med'},{phase:'P2',text:'Build alert kill list',pri:'High'},{phase:'P2',text:'Document MS scope',pri:'Med'},{phase:'P3',text:'Set up recurring MS incident review',pri:'High'}]},
   {icon:'✅',color:'#D1FAE5',name:'Story / QA Redesign',owner:'Megan Lane',target:'90% of Olympic JIRA stories meet QA standards',hasBriefing:false,
    deliverables:['QA checklist per job type','Updated delivery template','QA sign-off expectations','Lightweight QA artifacts'],
-   tasks:[{phase:'P1',text:'Define standard QA gates',pri:'High'},{phase:'P1',text:'Implement new Story standards w/ Alan',pri:'High'},{phase:'P2',text:'Update delivery story template',pri:'High'},{phase:'P2',text:'Introduce lightweight QA artifacts',pri:'Med'},{phase:'P2',text:'Publish QA checklist per job type',pri:'High'},{phase:'P3',text:'Deliver updated hand-off template',pri:'Med'},{phase:'P3',text:'Align with enhanced Story process',pri:'Med'}]},
+   tasks:[{phase:'P1',text:'Define standard QA gates',pri:'High',done:true},{phase:'P1',text:'Implement new Story standards w/ Alan',pri:'High',done:true},{phase:'P2',text:'Update delivery story template',pri:'High',done:true},{phase:'P2',text:'Introduce lightweight QA artifacts',pri:'Med'},{phase:'P2',text:'Publish QA checklist per job type',pri:'High'},{phase:'P3',text:'Deliver updated hand-off template',pri:'Med'},{phase:'P3',text:'Align with enhanced Story process',pri:'Med'}]},
   {icon:'🔄',color:'#FEF3C7',name:'Operating Model Alignment',owner:'Chris Jack',target:'Planned work not sabotaged by reactive fire drills',hasBriefing:false,
    deliverables:[{text:'RACI for MS / Core / Olympic',done:true},'Sprint capacity rule (10–15%)','Weekly Core–Reactive sync','SLAs for acknowledgment vs. resolution'],
    raci:{title:'Ticket Failure Process RACI',roles:['Mesos Agent','Managed Services','Alan Kehoe','Junior Olympic Team','Senior Olympic Team','Core Team','DBA Team'],rows:[
@@ -355,10 +396,10 @@ const workstreams=[
    tasks:[{phase:'P1',text:'Meet with Core team on sprint planning',pri:'High'},{phase:'P1',text:'Define escalation boundaries',pri:'High'},{phase:'P2',text:'Reserve sprint capacity (10–15%)',pri:'High'},{phase:'P2',text:"Little's Law throughput analysis",pri:'Med'},{phase:'P2',text:'Publish RACI for MS / Core / Olympic',pri:'High',done:true},{phase:'P2',text:'Establish SLAs',pri:'High'},{phase:'P3',text:'Launch weekly Core–Reactive sync',pri:'Med'}]},
   {icon:'🔧',color:'#FEE2E2',name:'Recurring Issue Elimination',owner:'Dan Hernandez',target:'90% reduction in highest-volume recurring failures',hasBriefing:false,
    deliverables:['Root-cause analysis','Permanent-fix stories','Reduction plan','Prevention standards'],
-   tasks:[{phase:'P1',text:'Coordinate needs from IFM hub',pri:'High'},{phase:'P1',text:'Separate recurring vs. one-off incidents',pri:'High'},{phase:'P2',text:'Root-cause analysis on top drivers',pri:'High'},{phase:'P2',text:'Convert recurring incidents to permanent-fix backlog',pri:'High'},{phase:'P3',text:'Implement structural fixes',pri:'High'},{phase:'P3',text:'Deliver reduction plan',pri:'Med'},{phase:'P4',text:'Develop prevention standards',pri:'Med'}]},
+   tasks:[{phase:'P1',text:'Coordinate needs from IFM hub',pri:'High',done:true},{phase:'P1',text:'Separate recurring vs. one-off incidents',pri:'High',done:true},{phase:'P2',text:'Root-cause analysis on top drivers',pri:'High',done:true},{phase:'P2',text:'Convert recurring incidents to permanent-fix backlog',pri:'High'},{phase:'P3',text:'Implement structural fixes',pri:'High'},{phase:'P3',text:'Deliver reduction plan',pri:'Med'},{phase:'P4',text:'Develop prevention standards',pri:'Med'}]},
   {icon:'⚡',color:'#EDE9FE',name:'Tableau Performance Remediation',owner:'John Hernandez',target:'All 582 workbooks < 8s load time by Sep 30',hasBriefing:false,
    deliverables:['Severity-tiered remediation plan','Critical workbooks remediated','Bad + Slow workbooks remediated','Ownership attribution'],
-   tasks:[{phase:'P1',text:'Prioritize by severity tier',pri:'High'},{phase:'P1',text:'Distinguish Vantage vs Account-developed',pri:'High'},{phase:'P2',text:'Execute Phase 1: Critical workbooks',pri:'High'},{phase:'P3',text:'Execute Phase 2: Bad + Slow workbooks',pri:'High'},{phase:'P3',text:'Coordinate across 93 clients / APAC',pri:'High'},{phase:'P4',text:'Complete all 582 workbooks',pri:'High'},{phase:'P4',text:'Validate and document ownership',pri:'Med'}]}
+   tasks:[{phase:'P1',text:'Prioritize by severity tier',pri:'High',done:true},{phase:'P1',text:'Distinguish Vantage vs Account-developed',pri:'High',done:true},{phase:'P2',text:'Execute Phase 1: Critical workbooks',pri:'High'},{phase:'P3',text:'Execute Phase 2: Bad + Slow workbooks',pri:'High'},{phase:'P3',text:'Coordinate across 93 clients / APAC',pri:'High'},{phase:'P4',text:'Complete all 582 workbooks',pri:'High'},{phase:'P4',text:'Validate and document ownership',pri:'Med'}]}
 ];
 const TL_TOTAL=169;
 const tlWS=[
@@ -392,7 +433,7 @@ const tlMilestones=[
   ['Story/QA',9,'Define standard QA gates',true],
   ['Story/QA',12,'Implement new Story standards w/ Alan',true],
   ['Story/QA',29,'Enforce QA on all new Core stories',false],
-  ['Story/QA',39,'Publish QA checklist + delivery template',false],
+  ['Story/QA',39,'Publish QA checklist + delivery template',true],
   ['Story/QA',70,'Add preventative QA checks',false],
   ['Story/QA',88,'QA Standards v2 finalized',false],
   ['OpModel',12,'Draft RACI v1',true],
@@ -402,13 +443,14 @@ const tlMilestones=[
   ['OpModel',42,'SLAs established (ack vs. resolution)',false],
   ['OpModel',62,"Little's Law throughput analysis done",false],
   ['OpModel',97,'Core–Reactive transition to steady-state',false],
-  ['Recurring',15,'Finalize recurring issues list',false],
-  ['Recurring',15,'Coordinate IFM hub fix',false],
+  ['Recurring',15,'Finalize recurring issues list',true],
+  ['Recurring',15,'Coordinate IFM hub fix',true],
+  ['Recurring',22,'Root-cause analysis on top drivers',true],
   ['Recurring',35,'Top 3 repeat failure patterns fixed',false],
   ['Recurring',57,'Re-rank recurring backlog by impact',false],
   ['Recurring',66,'Top 5 additional failures fixed',false],
   ['Recurring',102,'Legacy recurring backlog cleared',false],
-  ['Tableau',21,'Severity tier list complete (Crit/Bad/Slow)',false],
+  ['Tableau',21,'Severity tier list complete (Crit/Bad/Slow)',true],
   ['Tableau',50,'APAC mobilized — remediation wave starts',false],
   ['Tableau',60,'Critical workbooks done (288 workbooks)',false],
   ['Tableau',61,'Phase 2 Tableau remediation starts',false],
@@ -493,7 +535,7 @@ const windows=[
   {id:'w0',label:'Phase 1 — Completed',dates:'Apr 13 – Apr 26, 2026',phase:'Phase 1',phaseColor:'#2563EB',phaseBg:'#DBEAFE',allDone:true,
    items:[{date:'Apr 13',ws:'Program',task:'Kickoff + standing cadences established',owner:'John Hernandez',output:'Weekly cadence live',done:true},{date:'Apr 17',ws:'Monitoring & Alerting',task:'Categorize last 90 days into Noise / Repeat / Client-Impacting',owner:'John Hernandez',output:'Issue taxonomy',done:true},{date:'Apr 20',ws:'Monitoring & Alerting',task:'Identify Top 15 true failure patterns with root causes',owner:'John Hernandez',output:'Top 15 list',done:true},{date:'Apr 22',ws:'Story / QA',task:'Define standard QA story & gates',owner:'Megan Lane',output:'QA gate definitions',done:true},{date:'Apr 25',ws:'Operating Model',task:'Draft RACI v1 (MS / Core / Olympic)',owner:'Chris Jack',output:'v1 RACI',done:true},{date:'Apr 25',ws:'Story / QA',task:'Work with Alan to implement new Story standards',owner:'Megan Lane',output:'Story standards live',done:true},{date:'Apr 25',ws:'Program',task:'Set up recurring MS incident review meeting',owner:'John Hernandez',output:'Standing meeting live',done:true},{date:'Apr 26',ws:'Program',task:'Meet with Core team on sprint planning process',owner:'Chris Jack',output:'Sprint planning aligned',done:true}]},
   {id:'w1',label:'Phase 1 Close — Final Baseline Lock',dates:'Apr 27 – May 4, 2026',phase:'Phase 1',phaseColor:'#2563EB',phaseBg:'#DBEAFE',current:true,
-   items:[{date:'Apr 28',ws:'Recurring Issues',task:'Separate recurring vs. one-off — finalize list',owner:'Dan Hernandez',output:'Recurring list locked'},{date:'Apr 28',ws:'Recurring Issues',task:'Coordinate IFM hub fix for major root cause',owner:'Dan Hernandez',output:'IFM fix scoped'},{date:'May 3',ws:'Program',task:'Baseline metrics locked — issue volume, noise%, repeat%, CI% documented',owner:'John Hernandez',output:'Baseline metrics doc'},{date:'May 4',ws:'Monitoring & Alerting',task:'Publish issue taxonomy (1-page) and burn-down tracker',owner:'John Hernandez',output:'Taxonomy published'},{date:'May 4',ws:'Tableau Performance',task:'Severity tier list complete — Critical/Bad/Slow',owner:'John Hernandez',output:'Workbook tier list'}]},
+   items:[{date:'Apr 28',ws:'Recurring Issues',task:'Separate recurring vs. one-off — finalize list',owner:'Dan Hernandez',output:'Recurring list locked',done:true},{date:'Apr 28',ws:'Recurring Issues',task:'Coordinate IFM hub fix for major root cause',owner:'Dan Hernandez',output:'IFM fix scoped',done:true},{date:'May 3',ws:'Program',task:'Baseline metrics locked — issue volume, noise%, repeat%, CI% documented',owner:'John Hernandez',output:'Baseline metrics doc'},{date:'May 4',ws:'Monitoring & Alerting',task:'Publish issue taxonomy (1-page) and burn-down tracker',owner:'John Hernandez',output:'Taxonomy published'},{date:'May 4',ws:'Tableau Performance',task:'Severity tier list complete — Critical/Bad/Slow',owner:'John Hernandez',output:'Workbook tier list',done:true}]},
   {id:'w2',label:'Phase 2 Open — Enforce & Suppress',dates:'May 5 – May 18, 2026',phase:'Phase 2',phaseColor:'#7C3AED',phaseBg:'#EDE9FE',
    items:[{date:'May 6',ws:'Program',task:'Phase 1 exit review + Phase 2 enforcement confirmed',owner:'John Hernandez',output:'Phase 2 go-live'},{date:'May 8',ws:'Monitoring & Alerting',task:'Suppress non-actionable alerts: tesla-landing, SI7 checkpoints, envizi stage count',owner:'John Hernandez',output:'Alert volume reduced'},{date:'May 8',ws:'Monitoring & Alerting',task:'Escalate JIRA BASS-16457 with SLA',owner:'John Hernandez',output:'JIRA SLA enforced'},{date:'May 8',ws:'Monitoring & Alerting',task:'Escalate JIRA BASS-16564 with SLA',owner:'Dan Hernandez',output:'JIRA SLA enforced'},{date:'May 12',ws:'Story / QA',task:'Enforce QA standards on all new Core stories',owner:'Megan Lane',output:'QA compliance live'},{date:'May 15',ws:'Operating Model',task:'Escalation thresholds & routing active (3+ failures)',owner:'Chris Jack',output:'Active escalation model'},{date:'May 15',ws:'Operating Model',task:'Reserve sprint capacity (10–15%) for Core consulting',owner:'Chris Jack',output:'Capacity rule enforced'}]},
   {id:'w3',label:'Phase 2 Close — First Fixes & Checkpoint',dates:'May 19 – May 31, 2026',phase:'Phase 2',phaseColor:'#7C3AED',phaseBg:'#EDE9FE',
@@ -529,36 +571,121 @@ function buildWindows(){
   });
 }
 
-const GITHUB_TOKEN='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';
+const GITHUB_TOKEN='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';
 const GIST_ID='e609ba22136016f2eace4c7eaed7566c';
 const GIST_FILE='pqrp-state.json';
 const doneState={};
+const wsTaskState={};
+const notesState={};
+const activityLog=[];
 async function loadState(){
   try{
     const r=await fetch(`https://api.github.com/gists/${GIST_ID}`,{headers:{'Authorization':`token ${GITHUB_TOKEN}`,'Accept':'application/vnd.github.v3+json'}});
     if(!r.ok)return;
     const d=await r.json();
     const c=d.files[GIST_FILE]?.content;
-    if(c)Object.assign(doneState,JSON.parse(c));
+    if(c){
+      const p=JSON.parse(c);
+      if(p.milestones)Object.assign(doneState,p.milestones);
+      else Object.assign(doneState,p);
+      if(p.tasks)Object.assign(wsTaskState,p.tasks);
+      if(p.notes)Object.assign(notesState,p.notes);
+      if(p.log)activityLog.push(...p.log.slice(0,50));
+    }
   }catch(e){console.warn('Gist load failed',e);}
 }
 let _saveTimer;
-function saveDoneState(){
+function setSaveStatus(s){const el=document.getElementById('save-status');if(el)el.textContent=s;}
+function saveState(){
   clearTimeout(_saveTimer);
+  setSaveStatus('Saving…');
   _saveTimer=setTimeout(async()=>{
     try{
-      await fetch(`https://api.github.com/gists/${GIST_ID}`,{method:'PATCH',headers:{'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},body:JSON.stringify({files:{[GIST_FILE]:{content:JSON.stringify(doneState)}}})});
-    }catch(e){console.warn('Gist save failed',e);}
+      const content=JSON.stringify({milestones:doneState,tasks:wsTaskState,notes:notesState,log:activityLog.slice(0,50)});
+      const res=await fetch(`https://api.github.com/gists/${GIST_ID}`,{method:'PATCH',headers:{'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},body:JSON.stringify({files:{[GIST_FILE]:{content}}})});
+      if(res.ok){setSaveStatus('✓ Saved');}
+      else{const err=await res.json().catch(()=>({}));setSaveStatus('⚠ Save failed ('+res.status+')');console.warn('Gist save failed',res.status,err);}
+    }catch(e){setSaveStatus('⚠ Save error');console.warn('Gist save error',e);}
   },600);
 }
 function toggleItem(wi,ii){
-  const key=`${wi}-${ii}`;doneState[key]=!doneState[key];
-  saveDoneState();
+  const key=`${wi}-${ii}`;
+  doneState[key]=!doneState[key];
+  const win=windows[wi];
+  const label=(win.items[ii]?.text||win.items[ii]?.label||'Milestone');
+  activityLog.unshift({key,label,ws:win.name||'Milestone Window',ts:new Date().toISOString(),done:doneState[key],type:'milestone'});
+  if(activityLog.length>50)activityLog.pop();
+  saveState();
+  renderActivityFeed();
   const el=document.getElementById(`mi-${wi}-${ii}`);if(!el)return;
   el.querySelector('.mi-check').classList.toggle('done',doneState[key]);
   el.querySelector('.mi-task').classList.toggle('done-text',doneState[key]);
   updateWindowProgress(wi);
 }
+function toggleWsTask(wsIdx,ti){
+  const key=`wst-${wsIdx}-${ti}`;
+  wsTaskState[key]=!wsTaskState[key];
+  const ws=workstreams[wsIdx];
+  const label=ws.tasks[ti]?.text||'Task';
+  activityLog.unshift({key,label,ws:ws.name,ts:new Date().toISOString(),done:wsTaskState[key],type:'task',note:notesState[key]||''});
+  if(activityLog.length>50)activityLog.pop();
+  saveState();
+  renderActivityFeed();
+  renderWsProgress();
+  const el=document.getElementById(`wsti-${wsIdx}-${ti}`);if(!el)return;
+  el.querySelector('.wst-check').classList.toggle('done',wsTaskState[key]);
+  el.querySelector('.wsti-label').classList.toggle('done-text',wsTaskState[key]);
+}
+function toggleNote(e,key){
+  e.stopPropagation();
+  const area=document.getElementById('note-'+key);
+  if(!area)return;
+  const hidden=area.style.display==='none';
+  area.style.display=hidden?'block':'none';
+  if(hidden)area.querySelector('textarea').focus();
+}
+function saveNote(key,val){
+  notesState[key]=val.trim();
+  if(!notesState[key])delete notesState[key];
+  const btn=document.querySelector(`[data-note-key="${key}"]`);
+  if(btn)btn.classList.toggle('has-note',!!notesState[key]);
+  // Update last log entry for this key
+  const entry=activityLog.find(e=>e.key===key);
+  if(entry)entry.note=notesState[key]||'';
+  saveState();
+  renderActivityFeed();
+}
+function renderActivityFeed(){
+  const el=document.getElementById('activity-feed-list');if(!el)return;
+  if(!activityLog.length){el.innerHTML='<div class="act-empty">No activity yet — start checking off tasks!</div>';return;}
+  el.innerHTML=activityLog.slice(0,15).map(e=>{
+    const dt=new Date(e.ts);
+    const when=dt.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    return `<div class="act-item">
+      <div class="act-dot ${e.done?'done':'undone'}"></div>
+      <div class="act-body">
+        <div class="act-label">${e.label}</div>
+        <div class="act-meta">${e.ws} · ${when} · ${e.done?'<span style="color:var(--green);font-weight:600;">Completed</span>':'<span style="color:#9CA3AF;">Unchecked</span>'}</div>
+        ${e.note?`<div class="act-note">💬 ${e.note}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function renderWsProgress(){
+  const el=document.getElementById('ws-prog-grid');if(!el)return;
+  el.innerHTML=workstreams.map((ws,wi)=>{
+    const total=ws.tasks.length;
+    const done=ws.tasks.filter((t,ti)=>wsTaskState[`wst-${wi}-${ti}`]||t.done).length;
+    const pct=total?Math.round((done/total)*100):0;
+    const color=pct>=100?'var(--green)':pct>=50?'#3B82F6':'#F59E0B';
+    return `<div class="ws-prog-item">
+      <div class="ws-prog-name" title="${ws.name}">${ws.icon} ${ws.name}</div>
+      <div class="ws-prog-bar"><div class="ws-prog-fill" style="width:${pct}%;background:${color};"></div></div>
+      <div class="ws-prog-meta">${done}/${total} tasks · ${pct}%</div>
+    </div>`;
+  }).join('');
+}
+
 function updateWindowProgress(wi){
   const win=windows[wi];if(win.allDone)return;
   const total=win.items.length;
@@ -596,7 +723,26 @@ workstreams.forEach((ws,idx)=>{
   let bodyContent;
   if(ws.hasBriefing){bodyContent=`<div style="margin-top:12px">${buildMAbriefing()}</div>`;}
   else{
-    const th=ws.tasks.map(t=>`<div class="task-item"><span class="task-phase-tag ${phaseTagClass[t.phase]}">${t.phase}</span><span class="task-text">${t.text}</span><span class="task-priority ${t.pri==='High'?'pri-high':'pri-med'}">${t.pri}</span></div>`).join('');
+    const th=ws.tasks.map((t,ti)=>{
+      const k=`wst-${idx}-${ti}`;
+      const isDone=wsTaskState[k]||t.done;
+      const hasNote=!!notesState[k];
+      const noteVal=notesState[k]||'';
+      return `<div class="task-item" id="wsti-${idx}-${ti}" style="align-items:flex-start;gap:8px;">
+        <div class="wst-check ${isDone?'done':''}" onclick="toggleWsTask(${idx},${ti})"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span class="task-phase-tag ${phaseTagClass[t.phase]}">${t.phase}</span>
+            <span class="task-text wsti-label ${isDone?'done-text':''}" style="flex:1;">${t.text}</span>
+            <span class="task-priority ${t.pri==='High'?'pri-high':'pri-med'}">${t.pri}</span>
+            <span class="note-btn ${hasNote?'has-note':''}" data-note-key="${k}" onclick="toggleNote(event,'${k}')" title="${hasNote?'View/edit note':'Add a note'}">💬</span>
+          </div>
+          <div class="note-area" id="note-${k}" style="${noteVal?'':'display:none'}">
+            <textarea placeholder="Add a note or context…" onblur="saveNote('${k}',this.value)">${noteVal}</textarea>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
     const dh=ws.deliverables.map(d=>{
       const text=typeof d==='object'?d.text:d;
       const done=typeof d==='object'&&d.done;
@@ -665,27 +811,45 @@ function buildRisks(){
   const wsCol={'Program':'#334155','M&A':'#1D4ED8','Story/QA':'#059669','OpModel':'#B45309','Recurring':'#B91C1C','Tableau':'#6D28D9'};
   const wsLbl={'Program':'Program','M&A':'Monitoring & Alerting','Story/QA':'Story / QA','OpModel':'Operating Model','Recurring':'Recurring Issues','Tableau':'Tableau Perf.'};
   const staticRisks=[
-    {cat:'Schedule',title:'Phase 1 Baseline Lock',desc:'5 remaining Phase 1 milestones must close by May 4. Recurring Issues workstream is furthest behind with 2 items already overdue.',owner:'John Hernandez',impact:'High',likelihood:'Medium',mitigation:'Daily check-ins this week; no new scope until baseline locked.',color:'#DC2626'},
-    {cat:'External Dependency',title:'IFM Hub Fix',desc:'Root-cause fix for a major recurring failure depends on IFM team response. No confirmed timeline yet — this is one of the oldest open root causes.',owner:'Dan Hernandez',impact:'High',likelihood:'Medium',mitigation:'Escalate to leadership by May 3 if no response. Add to standing MS review.',color:'#D97706'},
-    {cat:'External Dependency',title:'JIRA BASS-16457 — Schema Mismatch',desc:'Column constraint violations causing 23 repeat tickets/month. Fix requires Olympic team action and has been open for multiple sprints.',owner:'Dev Team Lead',impact:'High',likelihood:'Low',mitigation:'Escalate with formal SLA in Phase 2 Week 3. Track in burn-down dashboard.',color:'#D97706'},
-    {cat:'External Dependency',title:'JIRA BASS-16564 — Tririga API',desc:'Persistent API/data issue causing 20 repeat tickets/month. Assigned JIRA open with no resolution date.',owner:'Dev Team Lead',impact:'High',likelihood:'Low',mitigation:'Escalate with SLA in Phase 2 Week 3. Consider interim suppression if non-client-impacting.',color:'#D97706'},
-    {cat:'Infrastructure',title:'Postgres RDS Space Exhaustion',desc:'Largest single driver of client-impacting tickets (~130/mo). Auto-scaling fix not scheduled until Phase 3 — risk window is 10+ weeks.',owner:'DBA + Infra',impact:'Critical',likelihood:'Medium',mitigation:'Pre-schedule Infra sprint slot during Phase 2. Add manual 80% space alert as interim measure.',color:'#7C3AED'},
-    {cat:'Adoption',title:'QA Gate Compliance',desc:'New story standards require behavior change from Olympic delivery team. Risk of selective or inconsistent adoption without enforcement mechanism.',owner:'Megan Lane',impact:'Medium',likelihood:'Medium',mitigation:'Enforce at story review stage. Track compliance % weekly in program sync.',color:'#2563EB'},
-    {cat:'Resource',title:'Key Person Concentration',desc:'John Hernandez is primary owner on 3 of 5 workstreams. Any unavailability creates a single point of failure across Monitoring, Tableau, and Program management.',owner:'Program',impact:'High',likelihood:'Low',mitigation:'Document workstream runbooks by end of Phase 1. Identify backup owners for each stream.',color:'#059669'},
-    {cat:'Schedule',title:'Tableau APAC Dependency',desc:'288 critical workbook remediations require APAC team mobilization in Phase 3. Cross-timezone coordination and resourcing not yet confirmed.',owner:'John Hernandez',impact:'High',likelihood:'Medium',mitigation:'Initiate APAC conversation in Phase 2. Confirm capacity and remediation tooling.',color:'#DC2626'},
+    {cat:'External Dependency',title:'IFM Hub Fix',due:'May 3',desc:'Root-cause fix for a major recurring failure depends on IFM team response. No confirmed timeline yet — this is one of the oldest open root causes.',owner:'Dan Hernandez',impact:'High',likelihood:'Medium',mitigation:'Escalate to leadership by May 3 if no response. Add to standing MS review.',color:'#D97706'},
+    {cat:'Schedule',title:'Phase 1 Baseline Lock',due:'May 4',desc:'5 remaining Phase 1 milestones must close by May 4. Recurring Issues workstream is furthest behind with 2 items already overdue.',owner:'John Hernandez',impact:'High',likelihood:'Medium',mitigation:'Daily check-ins this week; no new scope until baseline locked.',color:'#DC2626'},
+    {cat:'Resource',title:'Key Person Concentration',due:'May 4',desc:'John Hernandez is primary owner on 3 of 5 workstreams. Any unavailability creates a single point of failure across Monitoring, Tableau, and Program management.',owner:'Program',impact:'High',likelihood:'Low',mitigation:'Document workstream runbooks by end of Phase 1. Identify backup owners for each stream.',color:'#059669'},
+    {cat:'Adoption',title:'QA Gate Compliance',due:'May 11',desc:'New story standards require behavior change from Olympic delivery team. Risk of selective or inconsistent adoption without enforcement mechanism.',owner:'Megan Lane',impact:'Medium',likelihood:'Medium',mitigation:'Enforce at story review stage. Track compliance % weekly in program sync.',color:'#2563EB'},
+    {cat:'External Dependency',title:'JIRA BASS-16457 — Schema Mismatch',due:'May 18',desc:'Column constraint violations causing 23 repeat tickets/month. Fix requires Olympic team action and has been open for multiple sprints.',owner:'Dev Team Lead',impact:'High',likelihood:'Low',mitigation:'Escalate with formal SLA in Phase 2 Week 3. Track in burn-down dashboard.',color:'#D97706'},
+    {cat:'External Dependency',title:'JIRA BASS-16564 — Tririga API',due:'May 18',desc:'Persistent API/data issue causing 20 repeat tickets/month. Assigned JIRA open with no resolution date.',owner:'Dev Team Lead',impact:'High',likelihood:'Low',mitigation:'Escalate with SLA in Phase 2 Week 3. Consider interim suppression if non-client-impacting.',color:'#D97706'},
   ];
   const iC={Critical:'#FEE2E2',High:'#FEF3C7',Medium:'#EDE9FE',Low:'#D1FAE5'};
   const iT={Critical:'#991B1B',High:'#92400E',Medium:'#5B21B6',Low:'#065F46'};
   const lC={High:'#FEE2E2',Medium:'#FEF3C7',Low:'#D1FAE5'};
   const lT={High:'#991B1B',Medium:'#92400E',Low:'#065F46'};
-  const overdueHtml=overdue.length===0
-    ?`<div style="padding:14px 16px;background:var(--green-light);border-radius:8px;font-size:12px;color:var(--green);font-weight:600;">✓ No overdue milestones — program is on track through today.</div>`
-    :overdue.map(m=>`<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:oklch(99% 0.004 27);border:1px solid oklch(88% 0.06 27);border-radius:8px;"><div style="width:8px;height:8px;border-radius:50%;background:#DC2626;flex-shrink:0;margin-top:4px;"></div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--navy);">${m[2]}</div><div style="display:flex;gap:7px;margin-top:5px;flex-wrap:wrap;"><span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:#FEE2E2;color:#991B1B;">Overdue · Day ${m[1]} (${dayToDate(m[1])})</span><span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:10px;background:${wsCol[m[0]]}22;color:${wsCol[m[0]]};">${wsLbl[m[0]]||m[0]}</span></div></div></div>`).join('');
-  const upcomingHtml=upcoming.length===0
-    ?`<div style="padding:14px 16px;background:var(--green-light);border-radius:8px;font-size:12px;color:var(--green);font-weight:600;">✓ No critical-path milestones in the next 21 days.</div>`
-    :upcoming.map(m=>`<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 14px;background:white;border:1px solid var(--border);border-radius:8px;"><div style="width:8px;height:8px;border-radius:50%;background:#D97706;flex-shrink:0;margin-top:4px;"></div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--navy);">${m[2]}</div><div style="display:flex;gap:7px;margin-top:5px;flex-wrap:wrap;"><span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:#FEF3C7;color:#92400E;">Due ${dayToDate(m[1])} · Day ${m[1]}</span><span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:10px;background:${wsCol[m[0]]}22;color:${wsCol[m[0]]};">${wsLbl[m[0]]||m[0]}</span></div></div></div>`).join('');
-  const riskHtml=staticRisks.map(r=>`<div style="background:white;border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid ${r.color};"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;"><div><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:3px;">${r.cat}</div><div style="font-size:13px;font-weight:700;color:var(--navy);">${r.title}</div></div><div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;"><span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:${iC[r.impact]};color:${iT[r.impact]};">${r.impact}</span><span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:${lC[r.likelihood]};color:${lT[r.likelihood]};">${r.likelihood} likelihood</span></div></div><div style="font-size:11.5px;color:var(--gray);line-height:1.55;margin-bottom:8px;">${r.desc}</div><div style="display:flex;align-items:flex-start;gap:7px;padding:7px 10px;background:var(--gray-light);border-radius:6px;"><span style="font-size:10px;font-weight:700;color:var(--green);flex-shrink:0;white-space:nowrap;">↳ Mitigation:</span><span style="font-size:10.5px;color:var(--gray);line-height:1.4;">${r.mitigation}</span></div><div style="font-size:10px;color:var(--muted);margin-top:7px;">Owner: ${r.owner}</div></div>`).join('');
-  document.getElementById('risks-content').innerHTML=`<div class="metric-band" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px;"><div class="metric" style="--metric-accent:#DC2626"><div class="metric-label">Overdue Milestones</div><div class="metric-val">${overdue.length}</div><div class="metric-sub">Past due, not yet completed</div></div><div class="metric" style="--metric-accent:#D97706"><div class="metric-label">Due Next 21 Days</div><div class="metric-val">${upcoming.length}</div><div class="metric-sub">Critical path items ahead</div></div><div class="metric" style="--metric-accent:#7C3AED"><div class="metric-label">Open Risk Items</div><div class="metric-val">${staticRisks.length}</div><div class="metric-sub">Tracked in risk register</div></div></div>${overdue.length>0?`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FEE2E2;border-radius:8px;margin-bottom:20px;"><span style="font-size:14px;">⚠️</span><span style="font-size:12px;font-weight:600;color:#991B1B;">${overdue.length} milestone${overdue.length>1?' are':' is'} overdue — these are past their scheduled due date and are now on the critical path.</span></div>`:''}<div class="section-title">Overdue Milestones</div><div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">${overdueHtml}</div><div class="section-title">Critical Path — Next 21 Days</div><div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">${upcomingHtml}</div><div class="section-title">Program Risk Register</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">${riskHtml}</div>`;
+  const combined=[...overdue,...upcoming].sort((a,b)=>a[1]-b[1]).slice(0,6);
+  const milestoneHtml=combined.length===0
+    ?`<div style="padding:14px 16px;background:var(--green-light);border-radius:8px;font-size:12px;color:var(--green);font-weight:600;">✓ No overdue or upcoming milestones — program is on track.</div>`
+    :combined.map(m=>{
+      const isOverdue=m[1]<=TODAY_DAY;
+      return `<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:${isOverdue?'oklch(99% 0.004 27)':'white'};border:1px solid ${isOverdue?'oklch(88% 0.06 27)':'var(--border)'};border-radius:8px;">
+        <div style="width:8px;height:8px;border-radius:50%;background:${isOverdue?'#DC2626':'#D97706'};flex-shrink:0;margin-top:4px;"></div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:600;color:var(--navy);">${m[2]}</div>
+          <div style="display:flex;gap:7px;margin-top:5px;flex-wrap:wrap;">
+            <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;background:${isOverdue?'#FEE2E2':'#FEF3C7'};color:${isOverdue?'#991B1B':'#92400E'};">${isOverdue?'Overdue':'Due'} · ${dayToDate(m[1])}</span>
+            <span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:10px;background:${wsCol[m[0]]}22;color:${wsCol[m[0]]};">${wsLbl[m[0]]||m[0]}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  const riskHtml=staticRisks.map(r=>`<div style="background:white;border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid ${r.color};"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;"><div><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:3px;">${r.cat}</div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><div style="font-size:13px;font-weight:700;color:var(--navy);">${r.title}</div>${r.due?`<span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:#FEF3C7;color:#92400E;">📅 Due ${r.due}</span>`:''}</div></div><div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;"><span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:${iC[r.impact]};color:${iT[r.impact]};">${r.impact}</span><span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:${lC[r.likelihood]};color:${lT[r.likelihood]};">${r.likelihood} likelihood</span></div></div><div style="font-size:11.5px;color:var(--gray);line-height:1.55;margin-bottom:8px;">${r.desc}</div><div style="display:flex;align-items:flex-start;gap:7px;padding:7px 10px;background:var(--gray-light);border-radius:6px;"><span style="font-size:10px;font-weight:700;color:var(--green);flex-shrink:0;white-space:nowrap;">↳ Mitigation:</span><span style="font-size:10.5px;color:var(--gray);line-height:1.4;">${r.mitigation}</span></div><div style="font-size:10px;color:var(--muted);margin-top:7px;">Owner: ${r.owner}</div></div>`).join('');
+  document.getElementById('risks-content').innerHTML=
+    `<div class="metric-band" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px;">
+      <div class="metric" style="--metric-accent:#DC2626"><div class="metric-label">Overdue Milestones</div><div class="metric-val">${overdue.length}</div><div class="metric-sub">Past due, not yet completed</div></div>
+      <div class="metric" style="--metric-accent:#D97706"><div class="metric-label">Due Next 21 Days</div><div class="metric-val">${upcoming.length}</div><div class="metric-sub">Critical path items ahead</div></div>
+      <div class="metric" style="--metric-accent:#7C3AED"><div class="metric-label">Open Risk Items</div><div class="metric-val">${staticRisks.length}</div><div class="metric-sub">Tracked in risk register</div></div>
+    </div>` +
+    (overdue.length>0?`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FEE2E2;border-radius:8px;margin-bottom:20px;"><span style="font-size:14px;">⚠️</span><span style="font-size:12px;font-weight:600;color:#991B1B;">${overdue.length} milestone${overdue.length>1?' are':' is'} overdue — these are past their scheduled due date and are now on the critical path.</span></div>`:'') +
+    `<div class="section-title">Milestone Watch — Nearest 6 by Due Date</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">${milestoneHtml}</div>
+    <div class="section-title">Program Risk Register</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">${riskHtml}</div>`
 }
 
 function applySavedState(){
@@ -698,8 +862,31 @@ function applySavedState(){
   });
   windows.forEach((_,wi)=>updateWindowProgress(wi));
 }
+function applySavedStateWs(){
+  Object.entries(wsTaskState).forEach(([key,isDone])=>{
+    if(!isDone)return;
+    const parts=key.split('-');
+    if(parts[0]!=='wst')return;
+    const el=document.getElementById(`wsti-${parts[1]}-${parts[2]}`);
+    if(!el)return;
+    el.querySelector('.wst-check').classList.add('done');
+    const lbl=el.querySelector('.wsti-label');
+    if(lbl)lbl.classList.add('done-text');
+  });
+  Object.entries(notesState).forEach(([key,note])=>{
+    if(!note)return;
+    const area=document.getElementById('note-'+key);
+    if(area){area.style.display='block';const ta=area.querySelector('textarea');if(ta)ta.value=note;}
+    const btn=document.querySelector(`[data-note-key="${key}"]`);
+    if(btn)btn.classList.add('has-note');
+  });
+}
 async function init(){
-  await loadState();
+  await loadState().then(()=>{
+    applySavedStateWs();
+    renderWsProgress();
+    renderActivityFeed();
+  });
   buildWindows();
   applySavedState();
   buildTimeline();
