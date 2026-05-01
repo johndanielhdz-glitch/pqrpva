@@ -140,6 +140,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 .act-meta{font-size:10.5px;color:var(--gray);margin-top:1px;}
 .act-note{font-size:11px;color:#6B7280;margin-top:3px;background:var(--gray-light);padding:3px 7px;border-radius:4px;font-style:italic;}
 .act-empty{font-size:12px;color:var(--gray);text-align:center;padding:16px 0;}
+.rc-swatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:border .15s;}
+.rc-swatch.rc-selected{border-color:white;box-shadow:0 0 0 2px #1E3A5F;}
 .briefing-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border-radius:10px;overflow:hidden;margin:14px 0 16px;box-shadow:var(--shadow);}
 .bkpi{padding:12px 12px 10px;text-align:center;background:white;}
 .bkpi-val{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;line-height:1;}
@@ -578,6 +580,7 @@ const doneState={};
 const wsTaskState={};
 const notesState={};
 const activityLog=[];
+const customRisks=[];
 async function loadState(){
   try{
     const r=await fetch(`https://api.github.com/gists/${GIST_ID}`,{headers:{'Authorization':`token ${GITHUB_TOKEN}`,'Accept':'application/vnd.github.v3+json'}});
@@ -591,6 +594,7 @@ async function loadState(){
       if(p.tasks)Object.assign(wsTaskState,p.tasks);
       if(p.notes)Object.assign(notesState,p.notes);
       if(p.log)activityLog.push(...p.log.slice(0,50));
+      if(p.customRisks)customRisks.push(...p.customRisks);
     }
   }catch(e){console.warn('Gist load failed',e);}
 }
@@ -601,7 +605,7 @@ function saveState(){
   setSaveStatus('Saving…');
   _saveTimer=setTimeout(async()=>{
     try{
-      const content=JSON.stringify({milestones:doneState,tasks:wsTaskState,notes:notesState,log:activityLog.slice(0,50)});
+      const content=JSON.stringify({milestones:doneState,tasks:wsTaskState,notes:notesState,log:activityLog.slice(0,50),customRisks});
       const res=await fetch(`https://api.github.com/gists/${GIST_ID}`,{method:'PATCH',headers:{'Authorization':`token ${GITHUB_TOKEN}`,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},body:JSON.stringify({files:{[GIST_FILE]:{content}}})});
       if(res.ok){setSaveStatus('✓ Saved');}
       else{const err=await res.json().catch(()=>({}));setSaveStatus('⚠ Save failed ('+res.status+')');console.warn('Gist save failed',res.status,err);}
@@ -838,18 +842,19 @@ function buildRisks(){
         </div>
       </div>`;
     }).join('');
-  const riskHtml=staticRisks.map(r=>`<div style="background:white;border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid ${r.color};"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;"><div><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:3px;">${r.cat}</div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><div style="font-size:13px;font-weight:700;color:var(--navy);">${r.title}</div>${r.due?`<span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:#FEF3C7;color:#92400E;">📅 Due ${r.due}</span>`:''}</div></div><div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;"><span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:${iC[r.impact]};color:${iT[r.impact]};">${r.impact}</span><span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:${lC[r.likelihood]};color:${lT[r.likelihood]};">${r.likelihood} likelihood</span></div></div><div style="font-size:11.5px;color:var(--gray);line-height:1.55;margin-bottom:8px;">${r.desc}</div><div style="display:flex;align-items:flex-start;gap:7px;padding:7px 10px;background:var(--gray-light);border-radius:6px;"><span style="font-size:10px;font-weight:700;color:var(--green);flex-shrink:0;white-space:nowrap;">↳ Mitigation:</span><span style="font-size:10.5px;color:var(--gray);line-height:1.4;">${r.mitigation}</span></div><div style="font-size:10px;color:var(--muted);margin-top:7px;">Owner: ${r.owner}</div></div>`).join('');
+  const allRisks=[...staticRisks,...customRisks];
+  const riskHtml=allRisks.map(r=>`<div style="background:white;border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid ${r.color};"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;"><div><div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:3px;">${r.cat}</div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><div style="font-size:13px;font-weight:700;color:var(--navy);">${r.title}</div>${r.due?`<span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:#FEF3C7;color:#92400E;">📅 Due ${r.due}</span>`:''}</div></div><div style="display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;"><span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:${iC[r.impact]};color:${iT[r.impact]};">${r.impact}</span><span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:${lC[r.likelihood]};color:${lT[r.likelihood]};">${r.likelihood} likelihood</span></div></div><div style="font-size:11.5px;color:var(--gray);line-height:1.55;margin-bottom:8px;">${r.desc}</div><div style="display:flex;align-items:flex-start;gap:7px;padding:7px 10px;background:var(--gray-light);border-radius:6px;"><span style="font-size:10px;font-weight:700;color:var(--green);flex-shrink:0;white-space:nowrap;">↳ Mitigation:</span><span style="font-size:10.5px;color:var(--gray);line-height:1.4;">${r.mitigation}</span></div><div style="font-size:10px;color:var(--muted);margin-top:7px;">Owner: ${r.owner}</div></div>`).join('');
   document.getElementById('risks-content').innerHTML=
     `<div class="metric-band" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px;">
       <div class="metric" style="--metric-accent:#DC2626"><div class="metric-label">Overdue Milestones</div><div class="metric-val">${overdue.length}</div><div class="metric-sub">Past due, not yet completed</div></div>
       <div class="metric" style="--metric-accent:#D97706"><div class="metric-label">Due Next 21 Days</div><div class="metric-val">${upcoming.length}</div><div class="metric-sub">Critical path items ahead</div></div>
-      <div class="metric" style="--metric-accent:#7C3AED"><div class="metric-label">Open Risk Items</div><div class="metric-val">${staticRisks.length}</div><div class="metric-sub">Tracked in risk register</div></div>
+      <div class="metric" style="--metric-accent:#7C3AED"><div class="metric-label">Open Risk Items</div><div class="metric-val">${staticRisks.length+customRisks.length}</div><div class="metric-sub">Tracked in risk register</div></div>
     </div>` +
     (overdue.length>0?`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FEE2E2;border-radius:8px;margin-bottom:20px;"><span style="font-size:14px;">⚠️</span><span style="font-size:12px;font-weight:600;color:#991B1B;">${overdue.length} milestone${overdue.length>1?' are':' is'} overdue — these are past their scheduled due date and are now on the critical path.</span></div>`:'') +
     `<div class="section-title">Milestone Watch — Nearest 6 by Due Date</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">${milestoneHtml}</div>
-    <div class="section-title">Program Risk Register</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">${riskHtml}</div>`
+    <div style="display:flex;align-items:center;justify-content:space-between;"><div class="section-title" style="margin-bottom:0;">Program Risk Register</div><button onclick="openRiskModal()" style="font-size:11px;font-weight:700;padding:5px 12px;background:#1E3A5F;color:white;border:none;border-radius:7px;cursor:pointer;">＋ Add Risk</button></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;margin-top:12px;">${riskHtml}</div>`
 }
 
 function applySavedState(){
@@ -894,5 +899,110 @@ async function init(){
   requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelector('.tab-panel.active').classList.add('visible')));
 }
 init();
+</script>
+<div id="add-risk-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:14px;padding:24px 28px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.25);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div style="font-size:15px;font-weight:700;color:#1E3A5F;">＋ Add Risk to Register</div>
+      <span onclick="closeRiskModal()" style="cursor:pointer;font-size:20px;color:#9CA3AF;line-height:1;">×</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="grid-column:1/-1;">
+        <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Risk Title *</label>
+        <input id="ri-title" placeholder="e.g. APAC Resourcing Gap" style="width:100%;padding:8px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;outline:none;" />
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Category *</label>
+        <select id="ri-cat" style="width:100%;padding:8px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;background:white;">
+          <option>Schedule</option><option>External Dependency</option><option>Resource</option>
+          <option>Adoption</option><option>Infrastructure</option><option>Governance</option><option>Other</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Due Date</label>
+        <input id="ri-due" placeholder="e.g. Jun 15" style="width:100%;padding:8px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;" />
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Impact *</label>
+        <select id="ri-impact" style="width:100%;padding:8px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;background:white;">
+          <option>Critical</option><option selected>High</option><option>Medium</option><option>Low</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Likelihood *</label>
+        <select id="ri-likelihood" style="width:100%;padding:8px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;background:white;">
+          <option>High</option><option selected>Medium</option><option>Low</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Owner *</label>
+        <input id="ri-owner" placeholder="e.g. John Hernandez" style="width:100%;padding:8px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;" />
+      </div>
+      <div style="grid-column:1/-1;">
+        <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Description *</label>
+        <textarea id="ri-desc" placeholder="Describe the risk and its potential impact…" style="width:100%;padding:8px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;height:72px;resize:none;font-family:inherit;"></textarea>
+      </div>
+      <div style="grid-column:1/-1;">
+        <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Mitigation Plan *</label>
+        <textarea id="ri-mitigation" placeholder="What actions are being taken to reduce this risk?" style="width:100%;padding:8px 10px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;box-sizing:border-box;height:62px;resize:none;font-family:inherit;"></textarea>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Color</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="rc-swatch" data-color="#DC2626" style="background:#DC2626;" onclick="selectRiskColor(this)"></div>
+          <div class="rc-swatch" data-color="#D97706" style="background:#D97706;" onclick="selectRiskColor(this)"></div>
+          <div class="rc-swatch rc-selected" data-color="#2563EB" style="background:#2563EB;" onclick="selectRiskColor(this)"></div>
+          <div class="rc-swatch" data-color="#7C3AED" style="background:#7C3AED;" onclick="selectRiskColor(this)"></div>
+          <div class="rc-swatch" data-color="#059669" style="background:#059669;" onclick="selectRiskColor(this)"></div>
+          <div class="rc-swatch" data-color="#334155" style="background:#334155;" onclick="selectRiskColor(this)"></div>
+        </div>
+      </div>
+    </div>
+    <div id="ri-error" style="display:none;margin-top:10px;font-size:11px;color:#DC2626;font-weight:600;"></div>
+    <div style="display:flex;gap:10px;margin-top:18px;justify-content:flex-end;">
+      <button onclick="closeRiskModal()" style="padding:8px 18px;border:1px solid #D1D5DB;border-radius:7px;font-size:13px;cursor:pointer;background:white;">Cancel</button>
+      <button onclick="submitRisk()" style="padding:8px 20px;background:#1E3A5F;color:white;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">Add Risk</button>
+    </div>
+  </div>
+</div>
+<script>
+function openRiskModal(){const m=document.getElementById('add-risk-modal');m.style.display='flex';}
+function closeRiskModal(){
+  const m=document.getElementById('add-risk-modal');m.style.display='none';
+  ['ri-title','ri-due','ri-owner','ri-desc','ri-mitigation'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('ri-cat').selectedIndex=0;
+  document.getElementById('ri-impact').selectedIndex=1;
+  document.getElementById('ri-likelihood').selectedIndex=1;
+  document.querySelectorAll('.rc-swatch').forEach(s=>s.classList.remove('rc-selected'));
+  document.querySelector('.rc-swatch[data-color="#2563EB"]').classList.add('rc-selected');
+  document.getElementById('ri-error').style.display='none';
+}
+function selectRiskColor(el){document.querySelectorAll('.rc-swatch').forEach(s=>s.classList.remove('rc-selected'));el.classList.add('rc-selected');}
+function submitRisk(){
+  const title=document.getElementById('ri-title').value.trim();
+  const desc=document.getElementById('ri-desc').value.trim();
+  const mitigation=document.getElementById('ri-mitigation').value.trim();
+  const owner=document.getElementById('ri-owner').value.trim();
+  const errEl=document.getElementById('ri-error');
+  if(!title||!desc||!mitigation||!owner){errEl.textContent='Please fill in all required fields.';errEl.style.display='block';return;}
+  const color=document.querySelector('.rc-swatch.rc-selected')?.dataset.color||'#2563EB';
+  const risk={
+    cat:document.getElementById('ri-cat').value,
+    title,
+    due:document.getElementById('ri-due').value.trim()||null,
+    desc,
+    owner,
+    impact:document.getElementById('ri-impact').value,
+    likelihood:document.getElementById('ri-likelihood').value,
+    mitigation,
+    color,
+    added:new Date().toISOString()
+  };
+  customRisks.push(risk);
+  saveState();
+  buildRisks();
+  closeRiskModal();
+}
+document.getElementById('add-risk-modal').addEventListener('click',function(e){if(e.target===this)closeRiskModal();});
 </script>
 </body></html>
