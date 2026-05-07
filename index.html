@@ -255,27 +255,41 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
       </div>
     </div>
     <div class="header-right">
+      <div class="hstat"><div class="hstat-val" id="hstat-days" style="color:oklch(85% 0.12 200);">--</div><div class="hstat-lbl">Days<br>In</div></div>
+      <div class="hstat-sep"></div>
       <div class="hstat"><div class="hstat-val">160</div><div class="hstat-lbl">Day<br>Program</div></div>
       <div class="hstat-sep"></div>
       <div class="hstat"><div class="hstat-val">5</div><div class="hstat-lbl">Work-<br>streams</div></div>
       <div class="hstat-sep"></div>
-      <div class="hstat"><div class="hstat-val">90%</div><div class="hstat-lbl">Failure<br>Target</div></div>
-      <div class="hstat-sep"></div>
       <div class="phase-pill">
-        <div class="pp-status"><span class="pp-dot"></span>Phase 1 Active</div>
-        <div class="pp-dates">Apr 13 – May 4, 2026</div>
+        <div class="pp-status"><span class="pp-dot"></span><span id="phase-pill-label">Phase 2 Active</span></div>
+        <div class="pp-dates" id="phase-pill-dates">May 5 – May 25, 2026</div>
       </div>
     </div>
   </div>
 </div>
 
-<div class="nav">
-  <button class="nav-btn active" onclick="showTab('overview',this)">Overview</button>
-  <button class="nav-btn" onclick="showTab('workstreams',this)">Workstreams</button>
-  <button class="nav-btn" onclick="showTab('schedule',this)">Schedule</button>
-  <button class="nav-btn" onclick="showTab('nextsteps',this)">Next Steps</button>
-  <button class="nav-btn" onclick="showTab('risks',this)">Risks</button>
-  <button class="nav-btn" onclick="showTab('about',this)">About</button>
+<div class="nav" style="justify-content:space-between;">
+  <div style="display:flex;">
+    <button class="nav-btn active" onclick="showTab('overview',this)">Overview</button>
+    <button class="nav-btn" onclick="showTab('workstreams',this)">Workstreams</button>
+    <button class="nav-btn" onclick="showTab('schedule',this)">Schedule</button>
+    <button class="nav-btn" onclick="showTab('nextsteps',this)">Next Steps</button>
+    <button class="nav-btn" onclick="showTab('risks',this)">Risks</button>
+    <button class="nav-btn" onclick="showTab('about',this)">About</button>
+  </div>
+  <button id="html-toggle-btn" onclick="toggleHtmlView()" style="padding:8px 14px;font-size:11px;font-weight:600;color:oklch(100% 0 0/40%);background:none;border:none;cursor:pointer;letter-spacing:.3px;border-left:1px solid oklch(100% 0 0/7%);transition:color .15s,background .15s;white-space:nowrap;font-family:monospace;" onmouseover="this.style.color='oklch(100% 0 0/80%)';this.style.background='oklch(100% 0 0/4%)'" onmouseout="this.style.color='oklch(100% 0 0/40%)';this.style.background='none'">&lt;/&gt;</button>
+</div>
+
+<div id="html-view-panel" style="display:none;position:fixed;inset:0;z-index:500;background:oklch(10% 0.018 234);display:none;flex-direction:column;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:oklch(14% 0.022 234);border-bottom:1px solid oklch(100% 0 0/10%);flex-shrink:0;">
+    <span style="font-family:monospace;font-size:13px;color:oklch(100% 0 0/70%);letter-spacing:.3px;">index.html</span>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button onclick="copyHtml()" id="copy-html-btn" style="padding:5px 14px;font-size:11px;font-weight:600;background:oklch(37% 0.10 162/30%);border:1px solid oklch(72% 0.18 162/30%);color:var(--green-mid);border-radius:6px;cursor:pointer;font-family:monospace;">Copy</button>
+      <button onclick="toggleHtmlView()" style="padding:5px 14px;font-size:11px;font-weight:600;background:oklch(100% 0 0/8%);border:1px solid oklch(100% 0 0/15%);color:oklch(100% 0 0/60%);border-radius:6px;cursor:pointer;">✕ Close</button>
+    </div>
+  </div>
+  <pre id="html-source" style="flex:1;overflow:auto;padding:20px 24px;margin:0;font-family:'Fira Mono','Cascadia Code','Consolas',monospace;font-size:12px;line-height:1.7;color:oklch(82% 0.04 200);tab-size:2;white-space:pre;background:transparent;"></pre>
 </div>
 
 <div id="tab-overview" class="tab-panel active"><div class="content">
@@ -343,7 +357,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 </div></div>
 
 <div id="tab-nextsteps" class="tab-panel"><div class="content">
-  <div class="current-window-badge"><div class="cw-dot"></div><div class="cw-text">You are here: Phase 1 Close — Final Baseline Lock (Apr 27 – May 4, 2026)</div></div>
+  <div class="current-window-badge"><div class="cw-dot"></div><div class="cw-text">You are here: Phase 2 Open — Enforce &amp; Suppress (May 5 – May 18, 2026)</div></div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
     <div class="section-title" style="margin-bottom:0;flex:1;">Weekly Milestones — All Phases</div>
     <button onclick="expandAll()" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;color:var(--gray);margin-left:12px;">Expand All</button>
@@ -375,8 +389,10 @@ const workstreams=[
    deliverables:['Issue taxonomy',{text:'Top 15 root cause list',done:true},'Burn-down tracker','Escalation flow','Kill list'],
    tasks:[{phase:'P1',text:'Categorize 300 issues/month',pri:'High',done:true},{phase:'P1',text:'Identify Top 15 failure patterns',pri:'High',done:true},{phase:'P1',text:'Publish issue taxonomy',pri:'High'},{phase:'P1',text:'Create burn-down tracker',pri:'High'},{phase:'P2',text:'Escalation flow diagram',pri:'Med'},{phase:'P2',text:'Build alert kill list',pri:'High'},{phase:'P2',text:'Document MS scope',pri:'Med'},{phase:'P3',text:'Set up recurring MS incident review',pri:'High'}]},
   {icon:'✅',color:'#D1FAE5',name:'Story / QA Redesign',owner:'Megan Lane',target:'90% of Olympic JIRA stories meet QA standards',hasBriefing:false,
-   deliverables:['QA checklist per job type','Updated delivery template','QA sign-off expectations','Lightweight QA artifacts'],
-   tasks:[{phase:'P1',text:'Define standard QA gates',pri:'High',done:true},{phase:'P1',text:'Implement new Story standards w/ Alan',pri:'High',done:true},{phase:'P2',text:'Update delivery story template',pri:'High',done:true},{phase:'P2',text:'Introduce lightweight QA artifacts',pri:'Med'},{phase:'P2',text:'Publish QA checklist per job type',pri:'High'},{phase:'P3',text:'Deliver updated hand-off template',pri:'Med'},{phase:'P3',text:'Align with enhanced Story process',pri:'Med'}]},
+   stats:[{val:'37%',lbl:'Stories Rewritten',sub:'152 of 409 tickets'},{val:'41%',lbl:'QA Test Cases',sub:'167 of 409 subtasks'},{val:'12',lbl:'JIRA Templates',sub:'Created & live'},{val:'$5K/yr',lbl:'Qmetry Decision',sub:'Tool approved'}],
+   recentUpdate:{date:'May 7, 2026',items:['Olympic team trained on QA sign-off expectations — executing by May 15','12 JIRA templates created; lightweight QA artifacts complete','Qmetry implementation approved at $5K/year for structured test case tracking','Gagan building reporting rubric for story quality scoring','QA Test Case subtasks at 41% (167/409); story rewrite at 37% (152/409)']},
+   deliverables:['QA checklist per job type','Updated delivery template',{text:'QA sign-off expectations',done:true},{text:'Lightweight QA artifacts',done:true}],
+   tasks:[{phase:'P1',text:'Define standard QA gates',pri:'High',done:true},{phase:'P1',text:'Implement new Story standards w/ Alan',pri:'High',done:true},{phase:'P2',text:'Update delivery story template',pri:'High',done:true},{phase:'P2',text:'Introduce lightweight QA artifacts',pri:'Med',done:true},{phase:'P2',text:'Publish QA checklist per job type',pri:'High'},{phase:'P3',text:'Deliver updated hand-off template',pri:'Med'},{phase:'P3',text:'Align with enhanced Story process',pri:'Med'}]},
   {icon:'🔄',color:'#FEF3C7',name:'Operating Model Alignment',owner:'Chris Jack',target:'Planned work not sabotaged by reactive fire drills',hasBriefing:false,
    deliverables:[{text:'RACI for MS / Core / Olympic',done:true},'Sprint capacity rule (10–15%)','Weekly Core–Reactive sync','SLAs for acknowledgment vs. resolution'],
    raci:{title:'Ticket Failure Process RACI',roles:['Mesos Agent','Managed Services','Alan Kehoe','Junior Olympic Team','Senior Olympic Team','Core Team','DBA Team'],rows:[
@@ -416,8 +432,8 @@ const tlMilestones=[
   ['Program',0,'Kickoff + standing cadences live',true],
   ['Program',12,'Set up MS incident review meeting',true],
   ['Program',13,'Core sprint planning meeting held',true],
-  ['Program',20,'Baseline metrics locked',false],
-  ['Program',23,'Phase 1 exit / Phase 2 launch',false],
+  ['Program',20,'Baseline metrics locked',true],
+  ['Program',23,'Phase 1 exit / Phase 2 launch',true],
   ['Program',42,'Phase 2 exec checkpoint readout',false],
   ['Program',80,'Validate ≤50/month run rate',false],
   ['Program',85,'Phase 3 exec readout',false],
@@ -426,7 +442,7 @@ const tlMilestones=[
   ['Program',116,'Formal program close',false],
   ['M&A',4,'Categorize 90-day issues (Noise/Repeat/CI)',true],
   ['M&A',7,'Identify Top 15 failure patterns',true],
-  ['M&A',21,'Publish issue taxonomy + burn-down tracker',false],
+  ['M&A',21,'Publish issue taxonomy + burn-down tracker',true],
   ['M&A',25,'Suppress non-actionable alerts',false],
   ['M&A',25,'Escalate JIRA BASS-16457 (schema mismatch)',false],
   ['M&A',25,'Escalate JIRA BASS-16564 (Tririga API)',false],
@@ -434,6 +450,7 @@ const tlMilestones=[
   ['M&A',74,'Refine alerting — 30-day false-pos review',false],
   ['Story/QA',9,'Define standard QA gates',true],
   ['Story/QA',12,'Implement new Story standards w/ Alan',true],
+  ['Story/QA',24,'Lightweight QA artifacts complete (12 JIRA templates)',true],
   ['Story/QA',29,'Enforce QA on all new Core stories',false],
   ['Story/QA',39,'Publish QA checklist + delivery template',true],
   ['Story/QA',70,'Add preventative QA checks',false],
@@ -468,7 +485,7 @@ const tlMonths=[
   {l:'Apr 13',p:0},{l:'May',p:10.65},{l:'Jun',p:28.99},
   {l:'Jul',p:46.75},{l:'Aug',p:65.09},{l:'Sep',p:83.43},{l:'Sep 30',p:100},
 ];
-const TODAY_PCT=(15/TL_TOTAL*100).toFixed(2);
+const TODAY_PCT=(24/TL_TOTAL*100).toFixed(2);
 
 function buildTimeline(){
   const container=document.getElementById('milestone-timeline');
@@ -536,10 +553,10 @@ document.addEventListener('mousemove',function(e){
 const windows=[
   {id:'w0',label:'Phase 1 — Completed',dates:'Apr 13 – Apr 26, 2026',phase:'Phase 1',phaseColor:'#2563EB',phaseBg:'#DBEAFE',allDone:true,
    items:[{date:'Apr 13',ws:'Program',task:'Kickoff + standing cadences established',owner:'John Hernandez',output:'Weekly cadence live',done:true},{date:'Apr 17',ws:'Monitoring & Alerting',task:'Categorize last 90 days into Noise / Repeat / Client-Impacting',owner:'John Hernandez',output:'Issue taxonomy',done:true},{date:'Apr 20',ws:'Monitoring & Alerting',task:'Identify Top 15 true failure patterns with root causes',owner:'John Hernandez',output:'Top 15 list',done:true},{date:'Apr 22',ws:'Story / QA',task:'Define standard QA story & gates',owner:'Megan Lane',output:'QA gate definitions',done:true},{date:'Apr 25',ws:'Operating Model',task:'Draft RACI v1 (MS / Core / Olympic)',owner:'Chris Jack',output:'v1 RACI',done:true},{date:'Apr 25',ws:'Story / QA',task:'Work with Alan to implement new Story standards',owner:'Megan Lane',output:'Story standards live',done:true},{date:'Apr 25',ws:'Program',task:'Set up recurring MS incident review meeting',owner:'John Hernandez',output:'Standing meeting live',done:true},{date:'Apr 26',ws:'Program',task:'Meet with Core team on sprint planning process',owner:'Chris Jack',output:'Sprint planning aligned',done:true}]},
-  {id:'w1',label:'Phase 1 Close — Final Baseline Lock',dates:'Apr 27 – May 4, 2026',phase:'Phase 1',phaseColor:'#2563EB',phaseBg:'#DBEAFE',current:true,
-   items:[{date:'Apr 28',ws:'Recurring Issues',task:'Separate recurring vs. one-off — finalize list',owner:'Dan Hernandez',output:'Recurring list locked',done:true},{date:'Apr 28',ws:'Recurring Issues',task:'Coordinate IFM hub fix for major root cause',owner:'Dan Hernandez',output:'IFM fix scoped',done:true},{date:'May 3',ws:'Program',task:'Baseline metrics locked — issue volume, noise%, repeat%, CI% documented',owner:'John Hernandez',output:'Baseline metrics doc'},{date:'May 4',ws:'Monitoring & Alerting',task:'Publish issue taxonomy (1-page) and burn-down tracker',owner:'John Hernandez',output:'Taxonomy published'},{date:'May 4',ws:'Tableau Performance',task:'Severity tier list complete — Critical/Bad/Slow',owner:'John Hernandez',output:'Workbook tier list',done:true}]},
-  {id:'w2',label:'Phase 2 Open — Enforce & Suppress',dates:'May 5 – May 18, 2026',phase:'Phase 2',phaseColor:'#7C3AED',phaseBg:'#EDE9FE',
-   items:[{date:'May 6',ws:'Program',task:'Phase 1 exit review + Phase 2 enforcement confirmed',owner:'John Hernandez',output:'Phase 2 go-live'},{date:'May 8',ws:'Monitoring & Alerting',task:'Suppress non-actionable alerts: tesla-landing, SI7 checkpoints, envizi stage count',owner:'John Hernandez',output:'Alert volume reduced'},{date:'May 8',ws:'Monitoring & Alerting',task:'Escalate JIRA BASS-16457 with SLA',owner:'John Hernandez',output:'JIRA SLA enforced'},{date:'May 8',ws:'Monitoring & Alerting',task:'Escalate JIRA BASS-16564 with SLA',owner:'Dan Hernandez',output:'JIRA SLA enforced'},{date:'May 12',ws:'Story / QA',task:'Enforce QA standards on all new Core stories',owner:'Megan Lane',output:'QA compliance live'},{date:'May 15',ws:'Operating Model',task:'Escalation thresholds & routing active (3+ failures)',owner:'Chris Jack',output:'Active escalation model'},{date:'May 15',ws:'Operating Model',task:'Reserve sprint capacity (10–15%) for Core consulting',owner:'Chris Jack',output:'Capacity rule enforced'}]},
+  {id:'w1',label:'Phase 1 Close — Final Baseline Lock',dates:'Apr 27 – May 4, 2026',phase:'Phase 1',phaseColor:'#2563EB',phaseBg:'#DBEAFE',
+   items:[{date:'Apr 28',ws:'Recurring Issues',task:'Separate recurring vs. one-off — finalize list',owner:'Dan Hernandez',output:'Recurring list locked',done:true},{date:'Apr 28',ws:'Recurring Issues',task:'Coordinate IFM hub fix for major root cause',owner:'Dan Hernandez',output:'IFM fix scoped',done:true},{date:'May 3',ws:'Program',task:'Baseline metrics locked — issue volume, noise%, repeat%, CI% documented',owner:'John Hernandez',output:'Baseline metrics doc',done:true},{date:'May 4',ws:'Monitoring & Alerting',task:'Publish issue taxonomy (1-page) and burn-down tracker',owner:'John Hernandez',output:'Taxonomy published',done:true},{date:'May 4',ws:'Tableau Performance',task:'Severity tier list complete — Critical/Bad/Slow',owner:'John Hernandez',output:'Workbook tier list',done:true}]},
+  {id:'w2',label:'Phase 2 Open — Enforce & Suppress',dates:'May 5 – May 18, 2026',phase:'Phase 2',phaseColor:'#7C3AED',phaseBg:'#EDE9FE',current:true,
+   items:[{date:'May 6',ws:'Program',task:'Phase 1 exit review + Phase 2 enforcement confirmed',owner:'John Hernandez',output:'Phase 2 go-live',done:true},{date:'May 7',ws:'Story / QA',task:'Lightweight QA artifacts complete — 12 JIRA templates created',owner:'Megan Lane',output:'QA templates live',done:true},{date:'May 7',ws:'Story / QA',task:'Olympic team trained on QA sign-off expectations',owner:'Megan Lane',output:'Team trained; execution by May 15',done:true},{date:'May 8',ws:'Monitoring & Alerting',task:'Suppress non-actionable alerts: tesla-landing, SI7 checkpoints, envizi stage count',owner:'John Hernandez',output:'Alert volume reduced'},{date:'May 8',ws:'Monitoring & Alerting',task:'Escalate JIRA BASS-16457 with SLA',owner:'John Hernandez',output:'JIRA SLA enforced'},{date:'May 8',ws:'Monitoring & Alerting',task:'Escalate JIRA BASS-16564 with SLA',owner:'Dan Hernandez',output:'JIRA SLA enforced'},{date:'May 12',ws:'Story / QA',task:'Enforce QA standards on all new Core stories',owner:'Megan Lane',output:'QA compliance live'},{date:'May 15',ws:'Operating Model',task:'Escalation thresholds & routing active (3+ failures)',owner:'Chris Jack',output:'Active escalation model'},{date:'May 15',ws:'Operating Model',task:'Reserve sprint capacity (10–15%) for Core consulting',owner:'Chris Jack',output:'Capacity rule enforced'}]},
   {id:'w3',label:'Phase 2 Close — First Fixes & Checkpoint',dates:'May 19 – May 31, 2026',phase:'Phase 2',phaseColor:'#7C3AED',phaseBg:'#EDE9FE',
    items:[{date:'May 18',ws:'Recurring Issues',task:'Permanent fixes for top 3 repeat failure patterns',owner:'Dan Hernandez',output:'First drivers removed'},{date:'May 22',ws:'Monitoring & Alerting',task:'Launch live issue & alert burn-down dashboard',owner:'John Hernandez',output:'Burn-down tracker live'},{date:'May 22',ws:'Story / QA',task:'Publish QA checklist + updated delivery template',owner:'Megan Lane',output:'QA checklist published'},{date:'May 25',ws:'Program',task:'Phase 2 checkpoint — exec readout',owner:'John Hernandez',output:'Exec readout delivered'},{date:'May 25',ws:'Operating Model',task:'Final RACI published (MS / Core / Olympic)',owner:'Chris Jack',output:'Final RACI live'},{date:'May 25',ws:'Operating Model',task:'SLAs established for acknowledgment vs. resolution',owner:'Chris Jack',output:'SLAs active'}]},
   {id:'w4',label:'Phase 3 Open — Systemic Fixes Begin',dates:'Jun 1 – Jun 22, 2026',phase:'Phase 3',phaseColor:'#D97706',phaseBg:'#FEF3C7',
@@ -771,7 +788,11 @@ workstreams.forEach((ws,idx)=>{
           <span><b style="color:#1D4ED8;">R</b> = Responsible</span><span><b style="color:#B45309;">A</b> = Accountable</span><span><b style="color:#7C3AED;">C</b> = Consulted</span><span>I = Informed</span>
         </div></div>`;
     }
-    bodyContent=`<div class="ws-tasks">${th}</div><div class="deliverables"><div class="del-title">📦 Key Deliverables</div>${dh}</div>${raciHtml}`;
+    let statsHtml='';
+    if(ws.stats){statsHtml=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:12px 14px;background:#F0FDF4;border-radius:8px;border:1px solid #BBF7D0;">${ws.stats.map(s=>`<div style="flex:1;min-width:90px;text-align:center;padding:4px 6px;"><div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;color:var(--green);line-height:1">${s.val}</div><div style="font-size:10px;font-weight:700;color:var(--navy);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">${s.lbl}</div><div style="font-size:10px;color:var(--muted);margin-top:1px">${s.sub}</div></div>`).join('')}</div>`;}
+    let updateHtml='';
+    if(ws.recentUpdate){updateHtml=`<div style="margin-top:10px;background:#F0FDF4;border-radius:8px;border-left:3px solid var(--green);padding:10px 14px;"><div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;">📋 Latest Update — ${ws.recentUpdate.date}</div>${ws.recentUpdate.items.map(item=>`<div style="font-size:11px;color:var(--gray);padding:2px 0 2px 14px;position:relative;line-height:1.5;"><span style="position:absolute;left:0;color:var(--green);font-weight:700;">·</span>${item}</div>`).join('')}</div>`;}
+    bodyContent=`${statsHtml}<div class="ws-tasks">${th}</div><div class="deliverables"><div class="del-title">📦 Key Deliverables</div>${dh}</div>${raciHtml}${updateHtml}`;
   }
   wsCards.innerHTML+=`<div class="ws-card" id="wsc-${idx}"><div class="ws-header" onclick="toggleWS(${idx})"><div class="ws-left"><div class="ws-icon" style="background:${ws.color}">${ws.icon}</div><div><div class="ws-title">${ws.name}${ws.hasBriefing?' <span style="font-size:9.5px;background:var(--green-light);color:var(--green);padding:1px 6px;border-radius:10px;font-weight:600;margin-left:6px;">Phase 1 Data Live</span>':''}</div><div class="ws-owner">Owner: ${ws.owner}</div></div></div><div class="ws-right"><span class="ws-target-badge">${ws.target}</span><span class="phase-status status-active" style="font-size:10px">● Active</span><span class="ws-chevron">▼</span></div></div><div class="ws-body">${bodyContent}</div></div>`;
 });
@@ -898,7 +919,59 @@ async function init(){
   buildRisks();
   requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelector('.tab-panel.active').classList.add('visible')));
 }
+function toggleHtmlView(){
+  const panel=document.getElementById('html-view-panel');
+  const btn=document.getElementById('html-toggle-btn');
+  const isOpen=panel.style.display==='flex';
+  if(isOpen){
+    panel.style.display='none';
+    btn.style.color='oklch(100% 0 0/40%)';
+  } else {
+    const src=document.documentElement.outerHTML;
+    document.getElementById('html-source').textContent=src;
+    panel.style.display='flex';
+    btn.style.color='var(--green-mid)';
+  }
+}
+function copyHtml(){
+  const src=document.getElementById('html-source').textContent;
+  navigator.clipboard.writeText(src).then(()=>{
+    const btn=document.getElementById('copy-html-btn');
+    btn.textContent='Copied!';
+    setTimeout(()=>btn.textContent='Copy',1800);
+  });
+}
+
 init();
+
+// Live days-into-program counter
+(function updateDaysIn(){
+  const START=new Date('2026-04-13T00:00:00');
+  const TOTAL=160;
+  const phases=[
+    {label:'Phase 1 Active',dates:'Apr 13 – May 4, 2026',end:new Date('2026-05-04')},
+    {label:'Phase 2 Active',dates:'May 5 – May 25, 2026',end:new Date('2026-05-25')},
+    {label:'Phase 3 Active',dates:'May 26 – Jul 7, 2026',end:new Date('2026-07-07')},
+    {label:'Phase 4 Active',dates:'Jul 8 – Aug 7, 2026',end:new Date('2026-08-07')},
+    {label:'Complete',dates:'Sep 30, 2026',end:new Date('2026-09-30')},
+  ];
+  function tick(){
+    const now=new Date();
+    const days=Math.max(1,Math.floor((now-START)/(1000*60*60*24))+1);
+    const el=document.getElementById('hstat-days');
+    if(el)el.textContent=Math.min(days,TOTAL);
+    const ph=phases.find(p=>now<=p.end)||phases[phases.length-1];
+    const lbl=document.getElementById('phase-pill-label');
+    const dt=document.getElementById('phase-pill-dates');
+    if(lbl)lbl.textContent=ph.label;
+    if(dt)dt.textContent=ph.dates;
+  }
+  tick();
+  // refresh at midnight
+  const now=new Date();
+  const msToMidnight=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1)-now;
+  setTimeout(()=>{tick();setInterval(tick,86400000);},msToMidnight);
+})();
 </script>
 <div id="add-risk-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
   <div style="background:white;border-radius:14px;padding:24px 28px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.25);">
